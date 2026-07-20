@@ -1,0 +1,274 @@
+// RS Atelier — local backing store for the mock public API.
+//
+// IMPORTANT
+// ---------
+// This database is NOT the production source of truth. The website is a client
+// of the Atelier RS backend (`/api/v1/public`). Until that backend is live, the
+// route handlers under src/app/api/v1/** implement the documented contract on
+// top of this schema so the site can run end to end.
+//
+// When the real backend lands: point NEXT_PUBLIC_API_BASE_URL at it and delete
+// src/app/api/v1/**. No page or component changes.
+//
+// Modelling follows "Atelier RS — Ecommerce Website Logic":
+//   * Dresses are ONE-OF-ONE. A Product IS a physical dress with its own code
+//     and lifecycle status — there are no styles, variants or stock counts.
+//   * One booking = one dress + one customer + one event window.
+//   * Money is stored in minor units (piastres), never as a float.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ---------------------------------------------------------------------------
+// Catalogue
+// ---------------------------------------------------------------------------
+
+model Branch {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  country   String?
+  location  String?
+  /// Operationally open.
+  active    Boolean  @default(true)
+  /// Visible on the website. Both must be true to appear publicly (§8).
+  published Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  collections Collection[]
+  products    Product[]
+  bookings    Booking[]
+
+  @@index([active, published])
+}
+
+model Collection {
+  id          String   @id @default(uuid())
+  branchId    String
+  name        String
+  slug        String
+  description String?
+  coverImage  String?
+  published   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  branch   Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([branchId, slug])
+  @@index([branchId, published])
+}
+
+/// One physical dress. `code` is the tag sewn into the garment, e.g. B1-0042.
+model Product {
+  id           String  @id @default(uuid())
+  branchId     String
+  collectionId String?
+  code         String  @unique
+  slug         String  @unique
+  description  String
+  fabric       String?
+  colour       String?
+  silhouette   String?
+  /// Available | Reserved | HandedToClient | Cleaning | Retired
+  status       String  @default("Available")
+  /// Lifetime repairs. Internal — only the derived health band is public (§9).
+  fixCount     Int     @default(0)
+  /// Rental price in piastres. Required before a dress can be self-booked.
+  price        Int?
+  /// How many times this dress has been requested. Powers the "Trending" rail.
+  /// Incremented on every booking created; demo values are seeded for display.
+  requestCount Int     @default(0)
+  /// Collateral, set at booking, collected in branch at handover.
+  insuranceAmount Int?
+  published    Boolean @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  branch     Branch         @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  collection Collection?    @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  images     ProductImage[]
+  bookings   Booking[]
+
+  @@index([branchId, published, status])
+  @@index([collectionId])
+}
+
+model ProductImage {
+  id        String  @id @default(uuid())
+  productId String
+  url       String
+  altText   String
+  isPrimary Boolean @default(false)
+  sortOrder Int     @default(0)
+  /// True for stand-in photography seeded for development. These are NOT
+  /// pictures of the actual garment and must be replaced before launch — the
+  /// UI labels them so nobody mistakes one for the real piece.
+  isDemo    Boolean @default(false)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, sortOrder])
+}
+
+// ---------------------------------------------------------------------------
+// Customers & leads
+// ---------------------------------------------------------------------------
+
+/// Customers have no login. Deduplicated by normalized phone (§6 Flow A).
+model Customer {
+  id              String   @id @default(uuid())
+  name            String
+  phone           String
+  /// E.164 without '+'. Dedupe key.
+  normalizedPhone String   @unique
+  /// website | walkin | phone
+  source          String   @default("website")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bookings Booking[]
+  leads    Lead[]
+
+  @@index([normalizedPhone])
+}
+
+model Lead {
+  id         String   @id @default(uuid())
+  customerId String
+  branchId   String?
+  productId  String?
+  note       String?
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Bookings
+// ---------------------------------------------------------------------------
+
+model Booking {
+  id         String @id @default(uuid())
+  /// Customer-facing handle, e.g. RS-7F3K2Q. Not enumerable.
+  reference  String @unique
+  customerId String
+  productId  String
+  branchId   String
+
+  /// The customer's event. Handover and takeback derive from it (§4).
+  eventDate    DateTime
+  /// event_date − 1 day.
+  handoverDate DateTime
+  /// event_date + 1 day.
+  takebackDate DateTime
+
+  /// All amounts in piastres.
+  price           Int
+  deposit         Int
+  balance         Int
+  insuranceAmount Int @default(0)
+
+  /// pending | confirmed | handed_over | completed | cancelled
+  status String @default("pending")
+  /// website | dashboard
+  source String @default("website")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customer   Customer           @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  product    Product            @relation(fields: [productId], references: [id], onDelete: Restrict)
+  branch     Branch             @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  statusLogs BookingStatusLog[]
+  payments   Payment[]
+  idHold     IdHold?
+
+  @@index([productId, status])
+  @@index([branchId, status])
+  @@index([customerId, createdAt])
+}
+
+/// Audit of every commercial transition. memberId is null for customer actions.
+model BookingStatusLog {
+  id         String   @id @default(uuid())
+  bookingId  String
+  fromStatus String?
+  toStatus   String
+  /// Null when the customer acted from the website (§6 Flow B).
+  memberId   String?
+  note       String?
+  createdAt  DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, createdAt])
+}
+
+/// Payments are recorded, not processed, by this system.
+model Payment {
+  id        String   @id @default(uuid())
+  bookingId String
+  /// deposit | balance | insurance | refund
+  type      String
+  /// in | out
+  direction String
+  amount    Int
+  /// card | cash | transfer | …
+  method    String
+  /// Null for customer-initiated (online) payments.
+  memberId  String?
+  createdAt DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+}
+
+/// Identity document held from Confirm until takeback in branch (§7).
+model IdHold {
+  id         String    @id @default(uuid())
+  bookingId  String    @unique
+  /// Reference to the stored file. No document contents live in this database.
+  fileRef    String
+  fileName   String?
+  releasedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// Site configuration
+// ---------------------------------------------------------------------------
+
+/// Editorial and policy content. Empty values render an honest
+/// "not yet published" state rather than invented copy.
+model Setting {
+  key           String   @id
+  value         String
+  isPlaceholder Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
+}
+
+/// Throttles the public, unauthenticated endpoints.
+model RateLimitEntry {
+  id        String   @id @default(uuid())
+  bucket    String
+  keyHash   String
+  createdAt DateTime @default(now())
+
+  @@index([bucket, keyHash, createdAt])
+}

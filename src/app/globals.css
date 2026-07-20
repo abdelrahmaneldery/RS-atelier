@@ -1,0 +1,279 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   RS Atelier — design tokens
+   Modern Editorial Atelier · Quiet Luxury · Boutique Minimalism
+
+   Restraint is the point: warm ivory grounds, deep charcoal type, and gold
+   used only as an accent — never as a large surface on the standard site.
+   ========================================================================== */
+
+@theme {
+  /* --- Palette --------------------------------------------------------- */
+  --color-ivory: #faf7f2;
+  --color-ivory-deep: #f4efe7;
+  --color-offwhite: #fdfcfa;
+
+  --color-ink: #16130f; /* near-black, warm */
+  --color-charcoal: #2c2823;
+  --color-graphite: #4a443c;
+  --color-stone: #7a7267; /* secondary text */
+  --color-mist: #a8a096; /* tertiary text, meta */
+
+  --color-beige: #e8dfd2;
+  --color-champagne: #ddcdb4;
+  --color-sand: #f0e9de;
+
+  --color-gold: #a8874e;
+  --color-gold-deep: #8a6d3a;
+  --color-gold-soft: #c4a978;
+
+  --color-line: #e3dbd0; /* hairlines on ivory */
+  --color-line-strong: #cfc4b5;
+  --color-line-dark: #3a352e; /* hairlines on ink */
+
+  --color-danger: #9b3b32;
+  --color-danger-soft: #f6ecea;
+  --color-success: #4a6b4f;
+  --color-success-soft: #eef2ed;
+  --color-warning: #8a6a2f;
+  --color-warning-soft: #f7f1e6;
+  --color-info: #3f5a6b;
+  --color-info-soft: #edf1f4;
+
+  /* --- Typography ------------------------------------------------------ */
+  --font-display: var(--font-playfair), "Playfair Display", Georgia, serif;
+  --font-sans: var(--font-manrope), "Manrope", system-ui, -apple-system, sans-serif;
+
+  /* --- Radii — restrained, never pill-shaped --------------------------- */
+  --radius-xs: 1px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+
+  /* --- Elevation — soft and warm, never harsh -------------------------- */
+  --shadow-subtle: 0 1px 2px rgb(22 19 15 / 0.04);
+  --shadow-card: 0 2px 16px -6px rgb(22 19 15 / 0.1);
+  --shadow-raised: 0 12px 40px -16px rgb(22 19 15 / 0.22);
+
+  /* --- Motion — restrained; see prefers-reduced-motion below ----------- */
+  --ease-out-quiet: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --duration-quick: 180ms;
+  --duration-base: 320ms;
+  --duration-slow: 620ms;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+@layer base {
+  /* Header height, so the homepage hero can sit behind the header without
+     hardcoding a pixel value in two places. */
+  :root {
+    --header-h: 4.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    :root {
+      --header-h: 5.25rem;
+    }
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-ivory);
+    color: var(--color-charcoal);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.65;
+    /* Body copy stays readable — never wispy. */
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* Nothing may cause a horizontal scrollbar on mobile. */
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    color: var(--color-ink);
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    line-height: 1.12;
+  }
+
+  /* Visible, high-contrast focus for every interactive element. */
+  :focus-visible {
+    outline: 2px solid var(--color-gold-deep);
+    outline-offset: 3px;
+    border-radius: var(--radius-xs);
+  }
+
+  /* Only remove the ring for pointer users who never needed it. */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  ::selection {
+    background-color: var(--color-champagne);
+    color: var(--color-ink);
+  }
+
+  img {
+    max-width: 100%;
+  }
+}
+
+/* ==========================================================================
+   Components
+   ========================================================================== */
+
+@layer components {
+  /* --- Editorial eyebrow ---------------------------------------------- */
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-stone);
+  }
+
+  .eyebrow-gold {
+    color: var(--color-gold-deep);
+  }
+
+  /* --- Rule with a gold tick ------------------------------------------ */
+  .rule-gold::after {
+    content: "";
+    display: block;
+    width: 2.5rem;
+    height: 1px;
+    margin-top: 1.25rem;
+    background-color: var(--color-gold);
+  }
+
+  /* --- Animated underline for text links ------------------------------ */
+  .link-underline {
+    position: relative;
+    display: inline-block;
+  }
+
+  .link-underline::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 100%;
+    height: 1px;
+    background-color: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform var(--duration-base) var(--ease-out-quiet);
+  }
+
+  .link-underline:hover::after,
+  .link-underline:focus-visible::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  /* --- Product image frame -------------------------------------------- */
+  .image-frame {
+    overflow: hidden;
+    background-color: var(--color-sand);
+  }
+
+  .image-zoom {
+    transition: transform var(--duration-slow) var(--ease-out-quiet);
+  }
+
+  .group:hover .image-zoom {
+    transform: scale(1.04);
+  }
+}
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+
+@layer utilities {
+  .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity var(--duration-slow) var(--ease-out-quiet),
+      transform var(--duration-slow) var(--ease-out-quiet);
+  }
+
+  .reveal-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Skip-link pattern: hidden until focused. */
+  .sr-only-focusable:not(:focus):not(:focus-within) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}
+
+/* ==========================================================================
+   Reduced motion — honour the user's system preference (§32)
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Revealed content must still be readable when transitions are disabled. */
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  .image-zoom,
+  .group:hover .image-zoom {
+    transform: none;
+  }
+}
+
+/* ==========================================================================
+   Print — booking confirmations are frequently printed
+   ========================================================================== */
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+}
