@@ -44,7 +44,7 @@ const FALLBACKS: Record<SettingKey, string> = {
   [SETTING_KEYS.contactEmail]: "",
   [SETTING_KEYS.contactOpeningHours]: "[]",
   [SETTING_KEYS.announcementText]:
-    "New Pieces Every Two Weeks — Reserve Yours Online",
+    "New Pieces Every Two Weeks — Check Availability Online",
   [SETTING_KEYS.policyRental]: "",
   [SETTING_KEYS.policyCancellation]: "",
   [SETTING_KEYS.policyPrivacy]: "",

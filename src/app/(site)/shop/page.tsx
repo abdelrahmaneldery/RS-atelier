@@ -9,7 +9,7 @@ import { ShopClient } from "@/components/shop/shop-client";
 export const metadata: Metadata = {
   title: "Shop the Collection",
   description:
-    "Browse the one-of-one gowns held at your chosen RS Atelier branch and reserve for your date.",
+    "Browse the one-of-one gowns held at your chosen RS Atelier branch and check availability for your date.",
   alternates: { canonical: "/shop" },
 };
 

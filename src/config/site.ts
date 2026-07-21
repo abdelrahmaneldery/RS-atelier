@@ -13,7 +13,7 @@ export const SITE = {
   tagline: "Atelier",
   establishedYear: 2019,
   description:
-    "One-of-one occasion gowns, rented by the night. Choose your branch, find your date, and reserve online.",
+    "One-of-one occasion gowns, rented by the night. Choose your branch, check availability for your date, and reserve with the branch team.",
 } as const;
 
 export type NavLink = {
@@ -79,9 +79,9 @@ export const HOW_IT_WORKS_STEPS = [
   },
   {
     number: "03",
-    title: "Reserve Online",
-    body: "Pay a 50% deposit and upload your ID to confirm. Your dress is then held for your event.",
-    owner: "online" as const,
+    title: "Contact the Branch",
+    body: "Once your date is free, contact the branch to reserve your gown. Nothing is paid, held or confirmed online.",
+    owner: "branch" as const,
   },
   {
     number: "04",
@@ -107,8 +107,8 @@ export const WHY_RS = [
   },
   {
     icon: "reserve",
-    title: "Reserve Online",
-    body: "Check real availability and secure your dress without waiting for a callback.",
+    title: "Check Availability",
+    body: "See the real available dates for each gown, then reserve with the branch team.",
     href: "/branches",
   },
   {
@@ -150,8 +150,8 @@ export const OCCASION_CATEGORIES = [
 /** Compact reassurance strip on the storefront. */
 export const SERVICE_POINTS = [
   { title: "One of One", body: "Every gown is a single piece." },
-  { title: "Real Availability", body: "Live dates, checked as you book." },
-  { title: "Secure Reservation", body: "Hold online with a 50% deposit." },
+  { title: "Real Availability", body: "Live dates you can check any time." },
+  { title: "Reserve In Branch", body: "Reserve your gown with the branch team." },
   { title: "Personal Fitting", body: "Collect and fit in branch." },
   { title: "Trusted Since 2019", body: "An established Egyptian atelier." },
 ] as const;

@@ -71,7 +71,7 @@
   /* Header height, so the homepage hero can sit behind the header without
      hardcoding a pixel value in two places. */
   :root {
-    --header-h: 4.5rem;
+    --header-h: 4rem;
   }
 
   @media (min-width: 1024px) {

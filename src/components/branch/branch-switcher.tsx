@@ -23,11 +23,17 @@ export function BranchSwitcher({
   onDark = false,
   /** Slug of the branch the current page belongs to, when it belongs to one. */
   pageBranchSlug,
+  className,
+  triggerClassName,
 }: {
   branches: ApiBranch[];
   selected: ApiBranch;
   onDark?: boolean;
   pageBranchSlug?: string;
+  /** Applied to the root, e.g. to let the switcher flex-grow on mobile. */
+  className?: string;
+  /** Applied to the trigger button, e.g. to make it fill and truncate. */
+  triggerClassName?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -74,7 +80,7 @@ export function BranchSwitcher({
   if (branches.length === 0) return null;
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className={cn("relative", className)}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -88,11 +94,12 @@ export function BranchSwitcher({
           onDark
             ? "text-white/85 hover:text-white"
             : "text-graphite hover:text-ink",
+          triggerClassName,
         )}
       >
         <MapPin aria-hidden="true" className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
         <span className="sr-only">Currently exploring. Change branch.</span>
-        <span className="truncate font-semibold">
+        <span className="min-w-0 truncate font-semibold">
           {branchDisplayName(selected)}
         </span>
         <ChevronDown

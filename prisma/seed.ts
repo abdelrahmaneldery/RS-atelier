@@ -451,7 +451,7 @@ async function main() {
     where: { key: "announcement.text" },
     create: {
       key: "announcement.text",
-      value: "New Pieces Every Two Weeks — Reserve Yours Online",
+      value: "New Pieces Every Two Weeks — Check Availability Online",
       isPlaceholder: false,
     },
     update: {},

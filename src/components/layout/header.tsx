@@ -112,7 +112,34 @@ export function Header({
             : "border-line bg-offwhite/95 shadow-subtle backdrop-blur-sm",
         )}
       >
-        <div className="mx-auto grid h-full w-full max-w-[1400px] grid-cols-[1fr_auto_1fr] items-center gap-6 px-5 sm:px-8 lg:px-12">
+        {/* Mobile / tablet header: one clean row — logo · branch · menu (< lg). */}
+        <div className="flex h-full items-center justify-between gap-2 px-4 lg:hidden">
+          <Logo onDark={overHero} className="shrink-0" />
+          {selectedBranch ? (
+            <BranchSwitcher
+              branches={branches}
+              selected={selectedBranch}
+              onDark={overHero}
+              pageBranchSlug={pageBranchSlug}
+              className="min-w-0"
+            />
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={menuOpen}
+            className={cn(
+              "-mr-3 flex h-11 w-11 shrink-0 items-center justify-center transition-colors duration-300",
+              overHero ? "text-white hover:text-white/80" : "text-graphite hover:text-ink",
+            )}
+          >
+            <Menu aria-hidden="true" className="h-5 w-5" strokeWidth={1.5} />
+          </button>
+        </div>
+
+        {/* Desktop header (lg+): unchanged. */}
+        <div className="mx-auto hidden h-full w-full max-w-[1400px] grid-cols-[1fr_auto_1fr] items-center gap-6 px-5 sm:px-8 lg:grid lg:px-12">
           <div className="justify-self-start">
             <Logo onDark={overHero} />
           </div>

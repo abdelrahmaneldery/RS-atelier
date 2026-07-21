@@ -20,15 +20,15 @@ export default function NotFound() {
         longer part of the collection.
       </p>
       <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
-        <ButtonLink href="/dresses">Browse the Collection</ButtonLink>
+        <ButtonLink href="/shop">Browse the Collection</ButtonLink>
         <ButtonLink href="/" variant="secondary">
           Return Home
         </ButtonLink>
       </div>
       <p className="mt-10 text-sm text-stone">
-        Looking for an existing request?{" "}
-        <Link href="/booking-lookup" className="link-underline text-ink">
-          Check your booking
+        Looking for something specific?{" "}
+        <Link href="/contact" className="link-underline text-ink">
+          Contact the branch
         </Link>
         .
       </p>
