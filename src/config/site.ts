@@ -32,9 +32,8 @@ export const PRIMARY_NAV: NavLink[] = [
   { label: "Contact", href: "/contact" },
 ];
 
-export const UTILITY_NAV: NavLink[] = [
-  { label: "My Booking", href: "/booking" },
-];
+// Reserving is not done online, so there is no "My Booking" lookup.
+export const UTILITY_NAV: NavLink[] = [];
 
 export const FOOTER_NAV: Array<{ heading: string; links: NavLink[] }> = [
   {
@@ -45,9 +44,8 @@ export const FOOTER_NAV: Array<{ heading: string; links: NavLink[] }> = [
     ],
   },
   {
-    heading: "Bookings",
+    heading: "Policies",
     links: [
-      { label: "My Booking", href: "/booking" },
       { label: "Rental Policy", href: "/rental-policy" },
       { label: "Cancellation Policy", href: "/cancellation-policy" },
     ],

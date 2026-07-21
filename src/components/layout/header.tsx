@@ -77,14 +77,13 @@ export function Header({
   const nav: NavLink[] = selectedBranch
     ? [
         { label: "Shop", href: "/shop" },
+        { label: "Our Story", href: "/our-story" },
         { label: "Contact Us", href: "/contact" },
         { label: "Rental Policy", href: "/rental-policy" },
       ]
     : PRIMARY_NAV;
 
-  const utilities: NavLink[] = selectedBranch
-    ? [{ label: "My Booking", href: "/booking" }]
-    : UTILITY_NAV;
+  const utilities: NavLink[] = selectedBranch ? [] : UTILITY_NAV;
 
   return (
     <>
@@ -127,7 +126,7 @@ export function Header({
                   href={link.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "link-underline font-sans text-[0.6875rem] font-medium uppercase tracking-[0.14em]",
+                    "link-underline font-sans text-[0.8125rem] font-medium uppercase tracking-[0.14em]",
                     "transition-colors duration-300",
                     overHero
                       ? "text-white/85 hover:text-white"

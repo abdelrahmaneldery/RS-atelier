@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { SlidersHorizontal, X, Search } from "lucide-react";
+import { SlidersHorizontal, X, Search, Check } from "lucide-react";
 
 import { cn } from "@/lib/cn";
+import { tintForColour } from "@/config/media";
 import { SORT_OPTIONS } from "@/config/site";
 import { HORIZON_DAYS, HEALTH_BAND_LABELS } from "@/lib/domain/constants";
 import { addDays, toDateKey } from "@/lib/domain/dates";
 import type { ApiProductCard, ApiCollection } from "@/lib/api/contract";
-import { Container, Eyebrow, EmptyState } from "@/components/ui/primitives";
+import { Container, EmptyState } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/field";
 import { ProductGrid, type CardAvailability } from "@/components/catalogue/product-card";
@@ -59,11 +60,10 @@ export function ShopClient({
   products: ApiProductCard[];
   collections: ApiCollection[];
 }) {
+  // Applied filters — these drive the product grid.
   const [category, setCategory] = useState("All Dresses");
-  const [search, setSearch] = useState("");
   const [colour, setColour] = useState("");
   const [collectionSlug, setCollectionSlug] = useState("");
-  const [sort, setSort] = useState<string>(DEFAULT_SORT);
   const [date, setDate] = useState("");
   const [availOnly, setAvailOnly] = useState(true);
   const [availIds, setAvailIds] = useState<Set<string> | null>(null);
@@ -71,7 +71,17 @@ export function ShopClient({
   const [availError, setAvailError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  // Toolbar controls (live, outside the drawer).
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<string>(DEFAULT_SORT);
+
+  // Draft filters — edited inside the drawer, committed on "Apply Filters".
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [draftCategory, setDraftCategory] = useState(category);
+  const [draftColour, setDraftColour] = useState(colour);
+  const [draftCollection, setDraftCollection] = useState(collectionSlug);
+  const [draftDate, setDraftDate] = useState(date);
+  const [draftAvailOnly, setDraftAvailOnly] = useState(availOnly);
 
   const today = new Date();
   const minDate = toDateKey(today);
@@ -83,16 +93,16 @@ export function ShopClient({
     return [...set].sort((a, b) => a.localeCompare(b));
   }, [products]);
 
-  function runAvailability(value: string) {
-    setDate(value);
+  /** Fetch (or clear) the free-date set for a chosen event date. */
+  function commitAvailability(nextDate: string) {
     setAvailError(null);
-    if (!value) {
+    if (!nextDate) {
       setAvailIds(null);
       setAvailWindow(null);
       return;
     }
     startTransition(async () => {
-      const res = await shopAvailability(branch.id, value);
+      const res = await shopAvailability(branch.id, nextDate);
       if (!res.ok) {
         setAvailError(res.error);
         setAvailIds(null);
@@ -102,6 +112,53 @@ export function ShopClient({
       setAvailIds(new Set(res.ids));
       setAvailWindow({ handover: res.handover, takeback: res.takeback });
     });
+  }
+
+  // --- Drawer lifecycle -----------------------------------------------------
+
+  function openDrawer() {
+    // Seed the draft from the currently applied filters, so the drawer always
+    // reopens showing what is in effect.
+    setDraftCategory(category);
+    setDraftColour(colour);
+    setDraftCollection(collectionSlug);
+    setDraftDate(date);
+    setDraftAvailOnly(availOnly);
+    setDrawerOpen(true);
+  }
+
+  function applyFilters() {
+    setCategory(draftCategory);
+    setColour(draftColour);
+    setCollectionSlug(draftCollection);
+    setAvailOnly(draftAvailOnly);
+    // Only hit the availability endpoint when the date actually changed.
+    if (draftDate !== date) {
+      setDate(draftDate);
+      commitAvailability(draftDate);
+    }
+    setDrawerOpen(false);
+  }
+
+  /** Reset the draft fields inside the drawer (does not apply until "Apply"). */
+  function clearDraftFilters() {
+    setDraftCategory("All Dresses");
+    setDraftColour("");
+    setDraftCollection("");
+    setDraftDate("");
+    setDraftAvailOnly(true);
+  }
+
+  /** Clear the applied filters (used from the toolbar / empty state). */
+  function resetFilters() {
+    setCategory("All Dresses");
+    setColour("");
+    setCollectionSlug("");
+    setDate("");
+    setAvailOnly(true);
+    setAvailIds(null);
+    setAvailWindow(null);
+    setAvailError(null);
   }
 
   const filtered = useMemo(() => {
@@ -139,14 +196,7 @@ export function ShopClient({
     return sorted;
   }, [products, category, colour, collectionSlug, search, date, availOnly, availIds, sort]);
 
-  const hasActiveFilters =
-    category !== "All Dresses" ||
-    search.trim() !== "" ||
-    colour !== "" ||
-    collectionSlug !== "" ||
-    date !== "" ||
-    sort !== DEFAULT_SORT;
-
+  // Active *filter* count (drawer filters only — search and sort are separate).
   const activeCount = [
     category !== "All Dresses",
     colour !== "",
@@ -154,137 +204,31 @@ export function ShopClient({
     date !== "",
   ].filter(Boolean).length;
 
-  function clearAll() {
-    setCategory("All Dresses");
-    setSearch("");
-    setColour("");
-    setCollectionSlug("");
-    setSort(DEFAULT_SORT);
-    setDate("");
-    setAvailOnly(true);
-    setAvailIds(null);
-    setAvailWindow(null);
-    setAvailError(null);
-  }
-
   // Availability annotation for a card, given the current date filter.
   function availabilityFor(p: ApiProductCard): CardAvailability {
     if (!date || !availIds) {
       return { label: `Condition: ${HEALTH_BAND_LABELS[p.healthBand]}`, free: null };
     }
     return availIds.has(p.id)
-      ? { label: "Free on your date", free: true }
-      : { label: "Not free that night", free: false };
-  }
-
-  function reserveHref(p: ApiProductCard): string {
-    return date && availIds?.has(p.id)
-      ? `/book/${p.slug}?date=${date}`
-      : `/dresses/${p.slug}`;
-  }
-
-  /** The advanced filter fields — rendered inline on desktop, in the drawer on mobile. */
-  function advancedFilters(prefix: string) {
-    return (
-      <>
-        <FilterField label="Event Date" htmlFor={`${prefix}-date`} hint={`Up to ${HORIZON_DAYS} days ahead`}>
-          <Input
-            id={`${prefix}-date`}
-            type="date"
-            min={minDate}
-            max={maxDate}
-            value={date}
-            onChange={(e) => runAvailability(e.currentTarget.value)}
-          />
-        </FilterField>
-
-        <FilterField label="Colour" htmlFor={`${prefix}-colour`}>
-          <Select
-            id={`${prefix}-colour`}
-            value={colour}
-            onChange={(e) => setColour(e.currentTarget.value)}
-          >
-            <option value="">All colours</option>
-            {colourOptions.map((c) => (
-              <option key={c} value={c}>
-                {titleCase(c)}
-              </option>
-            ))}
-          </Select>
-        </FilterField>
-
-        <FilterField label="Occasion" htmlFor={`${prefix}-occasion`}>
-          <Select
-            id={`${prefix}-occasion`}
-            value={category}
-            onChange={(e) => setCategory(e.currentTarget.value)}
-          >
-            {SHOP_CATEGORIES.map((c) => (
-              <option key={c.label} value={c.label}>
-                {c.label}
-              </option>
-            ))}
-          </Select>
-        </FilterField>
-
-        <FilterField label="Collection" htmlFor={`${prefix}-collection`}>
-          <Select
-            id={`${prefix}-collection`}
-            value={collectionSlug}
-            onChange={(e) => setCollectionSlug(e.currentTarget.value)}
-          >
-            <option value="">All collections</option>
-            {collections.map((c) => (
-              <option key={c.id} value={c.slug}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-        </FilterField>
-
-        <FilterField
-          label="Availability"
-          htmlFor={`${prefix}-availability`}
-          hint={date ? undefined : "Pick an event date first"}
-        >
-          <Select
-            id={`${prefix}-availability`}
-            value={availOnly ? "available" : "all"}
-            onChange={(e) => setAvailOnly(e.currentTarget.value === "available")}
-            disabled={!date}
-          >
-            <option value="available">Available for my date</option>
-            <option value="all">Show all gowns</option>
-          </Select>
-        </FilterField>
-      </>
-    );
+      ? { label: "Available on your date", free: true }
+      : { label: "Not available that night", free: false };
   }
 
   return (
     <>
       {/* 1. Small header ---------------------------------------------------- */}
-      <Container size="wide" className="pt-8 lg:pt-10">
-        <Eyebrow gold>The Wardrobe</Eyebrow>
-        <h1 className="mt-4 font-display text-[2.1rem] leading-[1.1] text-ink sm:text-[2.75rem]">
+      <Container className="pt-8 lg:pt-10">
+        <h1 className="font-display text-[2.1rem] leading-[1.1] text-ink sm:text-[2.75rem]">
           Shop the Collection
         </h1>
-        <p className="mt-4 max-w-[60ch] text-sm leading-relaxed text-stone">
-          One-of-one gowns held at this branch and collected here. Choose your
-          date and reserve the piece for the night — no cart, no checkout.
-        </p>
-        <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-mist">
-          <span className="text-graphite">{branch.name}</span>
-          <span aria-hidden="true">·</span>
-          <span>
-            {products.length} {products.length === 1 ? "gown" : "gowns"}
-          </span>
+        <p className="mt-4 text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-graphite">
+          {branch.name}
         </p>
       </Container>
 
       {/* 2. Horizontal categories ------------------------------------------ */}
       <div className="mt-8 border-y border-line">
-        <Container size="wide">
+        <Container>
           <ul className="-mx-1 flex gap-2 overflow-x-auto py-4">
             {SHOP_CATEGORIES.map((c) => {
               const active = category === c.label;
@@ -310,90 +254,91 @@ export function ShopClient({
         </Container>
       </div>
 
-      {/* 3. Search + filters ------------------------------------------------ */}
-      <Container size="wide" className="py-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <label htmlFor="shop-search" className="sr-only">
-                Search gowns
-              </label>
-              <Search
-                aria-hidden="true"
-                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-mist"
-                strokeWidth={1.5}
-              />
-              <Input
-                id="shop-search"
-                type="search"
-                placeholder="Search gowns, colours, collections…"
-                value={search}
-                onChange={(e) => setSearch(e.currentTarget.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setDrawerOpen(true)}
-                className="lg:hidden"
-              >
-                <SlidersHorizontal aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
-                Filters
-                {activeCount > 0 ? (
-                  <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center bg-ink px-1 text-[0.625rem] text-ivory">
-                    {activeCount}
-                  </span>
-                ) : null}
-              </Button>
-              <div className="min-w-0 flex-1 sm:w-56 sm:flex-none">
-                <label htmlFor="shop-sort" className="sr-only">
-                  Sort by
-                </label>
-                <Select
-                  id="shop-sort"
-                  value={sort}
-                  onChange={(e) => setSort(e.currentTarget.value)}
-                >
-                  {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            </div>
+      {/* 3. Compact toolbar: search · sort · filters ----------------------- */}
+      <Container className="py-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <label htmlFor="shop-search" className="sr-only">
+              Search gowns
+            </label>
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-mist"
+              strokeWidth={1.5}
+            />
+            <Input
+              id="shop-search"
+              type="search"
+              placeholder="Search gowns, colours, collections…"
+              value={search}
+              onChange={(e) => setSearch(e.currentTarget.value)}
+              className="pl-10"
+            />
           </div>
 
-          {/* Advanced filters — inline on desktop only. */}
-          <div className="hidden gap-3 lg:grid lg:grid-cols-5">{advancedFilters("d")}</div>
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1 sm:w-52 sm:flex-none">
+              <label htmlFor="shop-sort" className="sr-only">
+                Sort by
+              </label>
+              <Select
+                id="shop-sort"
+                value={sort}
+                onChange={(e) => setSort(e.currentTarget.value)}
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
 
-          {/* Result count + clear. */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
-            <p className="text-sm text-stone" aria-live="polite">
-              {pending ? "Checking availability…" : `${filtered.length} ${filtered.length === 1 ? "gown" : "gowns"}`}
-              {availWindow && date && !pending ? (
-                <span className="ml-2 text-mist">
-                  · collect {availWindow.handover}, return {availWindow.takeback}
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={openDrawer}
+              aria-haspopup="dialog"
+              aria-expanded={drawerOpen}
+              className="shrink-0"
+            >
+              <SlidersHorizontal aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
+              Filters
+              {activeCount > 0 ? (
+                <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold-deep px-1 text-[0.625rem] font-semibold text-white">
+                  {activeCount}
                 </span>
               ) : null}
-            </p>
-            {hasActiveFilters ? (
-              <button
-                type="button"
-                onClick={clearAll}
-                className="link-underline font-sans text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-ink"
-              >
-                Clear filters
-              </button>
-            ) : null}
+            </Button>
           </div>
+        </div>
+
+        {/* Result count + quick clear. */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+          <p className="text-sm text-stone" aria-live="polite">
+            {pending
+              ? "Checking availability…"
+              : `${filtered.length} ${filtered.length === 1 ? "gown" : "gowns"}`}
+            {availWindow && date && !pending ? (
+              <span className="ml-2 text-mist">
+                · collect {availWindow.handover}, return {availWindow.takeback}
+              </span>
+            ) : null}
+          </p>
+          {activeCount > 0 ? (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="link-underline font-sans text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-ink"
+            >
+              Clear all
+            </button>
+          ) : null}
         </div>
       </Container>
 
       {/* 4. Product grid ---------------------------------------------------- */}
-      <Container size="wide" className="pb-16 lg:pb-24">
+      <Container className="pb-16 lg:pb-24">
         {availError ? (
           <p className="mb-6 border-l-2 border-danger bg-danger-soft px-4 py-3 text-sm text-danger">
             {availError}
@@ -405,14 +350,20 @@ export function ShopClient({
             products={filtered}
             priorityCount={4}
             availabilityFor={availabilityFor}
-            reserveHrefFor={reserveHref}
           />
         ) : (
           <EmptyState
             title="No gowns match those filters"
             body="Try a different occasion, colour or date — or clear the filters to see the full wardrobe at this branch."
             action={
-              <Button type="button" variant="secondary" onClick={clearAll}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  resetFilters();
+                  setSearch("");
+                }}
+              >
                 Clear Filters
               </Button>
             }
@@ -420,18 +371,141 @@ export function ShopClient({
         )}
       </Container>
 
-      {/* Mobile filter drawer ---------------------------------------------- */}
+      {/* Filter drawer (all breakpoints) ----------------------------------- */}
       {drawerOpen ? (
-        <FilterDrawer
-          onClose={() => setDrawerOpen(false)}
-          onClear={clearAll}
-          hasActiveFilters={hasActiveFilters}
-          resultCount={filtered.length}
-        >
-          {advancedFilters("m")}
+        <FilterDrawer onClose={() => setDrawerOpen(false)} onClear={clearDraftFilters} onApply={applyFilters}>
+          <FilterField label="Event Date" htmlFor="f-date" hint={`Up to ${HORIZON_DAYS} days ahead`}>
+            <Input
+              id="f-date"
+              type="date"
+              min={minDate}
+              max={maxDate}
+              value={draftDate}
+              onChange={(e) => setDraftDate(e.currentTarget.value)}
+            />
+          </FilterField>
+
+          <fieldset className="flex flex-col gap-3 border-0 p-0">
+            <legend className="mb-1 font-sans text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-graphite">
+              Colour
+            </legend>
+            <ColourSwatches
+              options={colourOptions}
+              value={draftColour}
+              onChange={setDraftColour}
+            />
+          </fieldset>
+
+          <FilterField label="Occasion" htmlFor="f-occasion">
+            <Select
+              id="f-occasion"
+              value={draftCategory}
+              onChange={(e) => setDraftCategory(e.currentTarget.value)}
+            >
+              {SHOP_CATEGORIES.map((c) => (
+                <option key={c.label} value={c.label}>
+                  {c.label}
+                </option>
+              ))}
+            </Select>
+          </FilterField>
+
+          <FilterField label="Collection" htmlFor="f-collection">
+            <Select
+              id="f-collection"
+              value={draftCollection}
+              onChange={(e) => setDraftCollection(e.currentTarget.value)}
+            >
+              <option value="">All collections</option>
+              {collections.map((c) => (
+                <option key={c.id} value={c.slug}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+          </FilterField>
+
+          <FilterField
+            label="Availability"
+            htmlFor="f-availability"
+            hint={draftDate ? undefined : "Pick an event date first"}
+          >
+            <Select
+              id="f-availability"
+              value={draftAvailOnly ? "available" : "all"}
+              onChange={(e) => setDraftAvailOnly(e.currentTarget.value === "available")}
+              disabled={!draftDate}
+            >
+              <option value="available">Available for my date</option>
+              <option value="all">Show all gowns</option>
+            </Select>
+          </FilterField>
         </FilterDrawer>
       ) : null}
     </>
+  );
+}
+
+// --- Colour swatches --------------------------------------------------------
+// Large square swatches showing the actual colour. Toggle a selected swatch to
+// clear it. A thin border keeps light colours visible; the active swatch gets a
+// black outline and a small check.
+
+function ColourSwatches({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[];
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  if (options.length === 0) {
+    return <p className="text-xs text-mist">No colours to filter at this branch.</p>;
+  }
+
+  return (
+    <ul className="grid grid-cols-4 gap-x-3 gap-y-4">
+      {options.map((c) => {
+        const selected = value === c;
+        return (
+          <li key={c}>
+            <button
+              type="button"
+              onClick={() => onChange(selected ? "" : c)}
+              aria-pressed={selected}
+              aria-label={titleCase(c)}
+              className="group flex w-full flex-col items-center gap-2 focus:outline-none"
+            >
+              <span
+                className={cn(
+                  "relative aspect-square w-full transition-[border-color,box-shadow] duration-200",
+                  "group-focus-visible:ring-2 group-focus-visible:ring-gold group-focus-visible:ring-offset-2",
+                  selected
+                    ? "border-2 border-ink shadow-subtle"
+                    : "border border-line-strong group-hover:border-stone",
+                )}
+                style={{ backgroundColor: tintForColour(c) }}
+              >
+                {selected ? (
+                  <span className="absolute right-1 top-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-ink text-ivory">
+                    <Check aria-hidden="true" className="h-2.5 w-2.5" strokeWidth={3} />
+                  </span>
+                ) : null}
+              </span>
+              <span
+                className={cn(
+                  "text-center text-[0.6875rem] leading-tight",
+                  selected ? "font-medium text-ink" : "text-stone",
+                )}
+              >
+                {titleCase(c)}
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -462,19 +536,19 @@ function FilterField({
   );
 }
 
-// --- Mobile filter drawer ---------------------------------------------------
+// --- Filter drawer ----------------------------------------------------------
+// Right-side overlay on desktop; full-width sheet on phones. Edits stay local
+// to the drawer (draft state) until "Apply Filters" commits them.
 
 function FilterDrawer({
   onClose,
   onClear,
-  hasActiveFilters,
-  resultCount,
+  onApply,
   children,
 }: {
   onClose: () => void;
   onClear: () => void;
-  hasActiveFilters: boolean;
-  resultCount: number;
+  onApply: () => void;
   children: React.ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -493,7 +567,7 @@ function FilterDrawer({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[70] lg:hidden">
+    <div className="fixed inset-0 z-[80]">
       <button
         type="button"
         aria-label="Close filters"
@@ -506,10 +580,10 @@ function FilterDrawer({
         role="dialog"
         aria-modal="true"
         aria-label="Filters"
-        className="absolute right-0 top-0 flex h-full w-full max-w-sm flex-col bg-ivory shadow-raised focus:outline-none"
+        className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-ivory shadow-raised focus:outline-none"
       >
         <div className="flex h-[var(--header-h)] items-center justify-between border-b border-line px-5">
-          <span className="font-display text-xl text-ink">Filters</span>
+          <h2 className="font-display text-xl text-ink">Filters</h2>
           <button
             type="button"
             onClick={onClose}
@@ -520,18 +594,16 @@ function FilterDrawer({
           </button>
         </div>
 
-        <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-6">
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-5 py-6">
           {children}
         </div>
 
         <div className="flex items-center gap-3 border-t border-line p-5">
-          {hasActiveFilters ? (
-            <Button type="button" variant="ghost" onClick={onClear} className="flex-1">
-              Clear
-            </Button>
-          ) : null}
-          <Button type="button" onClick={onClose} className="flex-1">
-            Show {resultCount} {resultCount === 1 ? "Gown" : "Gowns"}
+          <Button type="button" variant="secondary" onClick={onClear} className="flex-1">
+            Clear All
+          </Button>
+          <Button type="button" onClick={onApply} className="flex-1">
+            Apply Filters
           </Button>
         </div>
       </div>

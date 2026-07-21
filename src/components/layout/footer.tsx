@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { FOOTER_NAV, SITE } from "@/config/site";
+import { Logo } from "@/components/layout/logo";
 import { SETTING_KEYS, getSetting } from "@/lib/settings";
 import { formatPhone, whatsappLink } from "@/lib/phone";
 import { parseOpeningHours } from "@/lib/format";
@@ -29,10 +30,7 @@ export async function Footer() {
       <div className="mx-auto w-full max-w-[1400px] px-5 py-16 sm:px-8 lg:px-12 lg:py-20">
         <div className="grid gap-12 lg:grid-cols-[1.4fr_repeat(3,1fr)] lg:gap-8">
           <div>
-            <p className="font-display text-2xl text-ivory">Rawan Samir</p>
-            <p className="mt-1 font-sans text-[0.5625rem] font-medium uppercase tracking-[0.42em] text-gold-soft">
-              {SITE.tagline}
-            </p>
+            <Logo onDark />
             <p className="mt-6 max-w-[34ch] text-sm leading-relaxed text-ivory/60">
               Curated occasion wear, rented by private appointment. Established{" "}
               {SITE.establishedYear}.

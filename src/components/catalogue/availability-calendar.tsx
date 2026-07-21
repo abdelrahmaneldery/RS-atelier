@@ -1,41 +1,46 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { CalendarDays } from "lucide-react";
+import { useState, useTransition } from "react";
 
-import { cn } from "@/lib/cn";
-import { formatDate } from "@/lib/format";
 import { HORIZON_DAYS } from "@/lib/domain/constants";
-import { addDays, fromDateKey, toDateKey } from "@/lib/domain/dates";
+import { addDays, toDateKey } from "@/lib/domain/dates";
 import { Button, ButtonLink } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
+import { recheckProductDates } from "@/app/(site)/dresses/actions";
 
 /**
- * Dress → free dates (§5 mode 1).
+ * Dress → availability check (guidance only), with a custom RS Atelier calendar.
  *
- * One premium date input bounded to the booking horizon. Choosing a date and
- * pressing "Check Availability" reveals whether that night is free — advisory,
- * exactly as before: the free-date set and window derivation are unchanged, and
- * create still recomputes and re-checks for clashes on the server.
+ * The customer picks an available event date and checks whether this gown is
+ * free at the selected branch for it. This is READ-ONLY: it never changes the
+ * dress status, holds the gown, or creates any booking or customer record.
+ * Only available dates can be selected; on "Check Availability" the site
+ * re-reads live availability, so a date that has since been taken is caught and
+ * disabled. Reserving is arranged with the branch team.
  */
+const GUIDANCE_NOTE =
+  "Availability is shown for guidance only and is confirmed by the branch team.";
+
 export function AvailabilityCalendar({
   productSlug,
   freeDates,
-  canBook,
   similarHref,
+  contactHref = "/contact",
+  requestCallHref = "#request-a-call",
 }: {
   productSlug: string;
   freeDates: string[];
-  /** False when the dress has no public price and cannot be self-booked. */
-  canBook: boolean;
   /** Where "View Similar Dresses" leads (this dress's branch wardrobe). */
   similarHref: string;
+  /** "Contact the Branch" target. */
+  contactHref?: string;
+  /** "Request a Call" target (defaults to the on-page enquiry form). */
+  requestCallHref?: string;
 }) {
-  const router = useRouter();
-  const free = useMemo(() => new Set(freeDates), [freeDates]);
-
-  const [date, setDate] = useState("");
-  const [checked, setChecked] = useState<{ date: string; available: boolean } | null>(null);
+  const [available, setAvailable] = useState<Set<string>>(() => new Set(freeDates));
+  const [date, setDate] = useState<string | null>(null);
+  const [checked, setChecked] = useState<{ available: boolean; changed?: boolean } | null>(null);
+  const [pending, startTransition] = useTransition();
 
   const today = new Date();
   const min = toDateKey(today);
@@ -45,21 +50,35 @@ export function AvailabilityCalendar({
     return (
       <div className="mt-6 border border-line bg-offwhite px-5 py-6">
         <p className="text-sm leading-relaxed text-graphite">
-          This gown has no free dates in the next {HORIZON_DAYS} days. It may be
-          booked, or being cleaned between rentals.
+          This gown has no available dates in the next {HORIZON_DAYS} days. It may
+          be reserved, or being prepared between rentals.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-stone">
           Leave your details below and the branch will let you know when it is
-          free again.
+          available again.
         </p>
+        <p className="mt-4 text-xs leading-relaxed text-mist">{GUIDANCE_NOTE}</p>
       </div>
     );
   }
 
   function check(event: React.FormEvent) {
     event.preventDefault();
-    if (!date || date < min || date > max) return;
-    setChecked({ date, available: free.has(date) });
+    if (!date) return;
+    const chosen = date;
+    startTransition(async () => {
+      const fresh = await recheckProductDates(productSlug);
+      if (fresh) {
+        const freshSet = new Set(fresh);
+        setAvailable(freshSet);
+        if (!freshSet.has(chosen)) {
+          // Availability changed since the page loaded — disable that date.
+          setChecked({ available: false, changed: true });
+          return;
+        }
+      }
+      setChecked({ available: true });
+    });
   }
 
   return (
@@ -72,138 +91,75 @@ export function AvailabilityCalendar({
           >
             Event Date
           </label>
-          <div className="relative">
-            <CalendarDays
-              aria-hidden="true"
-              className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gold-deep"
-              strokeWidth={1.5}
-            />
-            <input
-              id="check-date"
-              type="date"
-              min={min}
-              max={max}
-              value={date}
-              onChange={(e) => {
-                setDate(e.currentTarget.value);
-                setChecked(null);
-              }}
-              onClick={(e) => e.currentTarget.showPicker?.()}
-              className={cn(
-                "h-14 w-full border border-line-strong bg-offwhite pl-12 pr-4 font-sans text-base text-ink",
-                "transition-colors hover:border-stone focus:border-gold focus:outline-none focus:ring-0",
-                // The whole field opens the native picker on click.
-                "[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0",
-                "[&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full",
-                "[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0",
-              )}
-            />
-          </div>
+          <DatePicker
+            id="check-date"
+            value={date}
+            onChange={(key) => {
+              setDate(key);
+              setChecked(null);
+            }}
+            availableDates={available}
+            min={min}
+            max={max}
+            ariaLabel="Event date"
+          />
         </div>
-        <Button type="submit" size="lg" disabled={!date} className="h-14 disabled:opacity-100">
-          Check Availability
+        <Button
+          type="submit"
+          size="lg"
+          disabled={!date || pending}
+          className="h-14 disabled:opacity-100"
+        >
+          {pending ? "Checking…" : "Let's Contact Us"}
         </Button>
       </form>
 
       {checked ? (
         checked.available ? (
-          <AvailableResult
-            selected={checked.date}
-            canBook={canBook}
-            onBook={() =>
-              router.push(`/book/${productSlug}?date=${encodeURIComponent(checked.date)}`)
-            }
-          />
+          <div className="mt-6 border border-gold/40 bg-sand/50 px-6 py-6">
+            <h3 className="font-display text-2xl text-ink">Available on Your Date</h3>
+            <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-graphite">
+              This gown is currently available for your selected event date.
+            </p>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <ButtonLink href={contactHref}>Contact the Branch</ButtonLink>
+              <ButtonLink href={requestCallHref} variant="secondary">
+                Request a Call
+              </ButtonLink>
+            </div>
+          </div>
         ) : (
-          <UnavailableResult
-            similarHref={similarHref}
-            onChooseAnother={() => {
-              setChecked(null);
-              setDate("");
-            }}
-          />
+          <div className="mt-6 border border-line bg-offwhite px-6 py-6">
+            <h3 className="font-display text-2xl text-ink">Not Available on This Date</h3>
+            <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-stone">
+              {checked.changed
+                ? "This date is no longer available — it was taken while you were deciding. Please choose another date."
+                : "This gown is already unavailable for your selected event date."}
+            </p>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setChecked(null);
+                  setDate(null);
+                }}
+              >
+                Choose Another Date
+              </Button>
+              <ButtonLink href={similarHref} variant="secondary">
+                View Similar Dresses
+              </ButtonLink>
+            </div>
+          </div>
         )
       ) : (
         <p className="mt-5 text-sm text-stone">
-          Choose your event date to see collection and return days.
+          Choose your event date to check availability.
         </p>
       )}
-    </div>
-  );
-}
 
-function AvailableResult({
-  selected,
-  canBook,
-  onBook,
-}: {
-  selected: string;
-  canBook: boolean;
-  onBook: () => void;
-}) {
-  const eventDate = fromDateKey(selected);
-  if (!eventDate) return null;
-
-  // Mirrors the server's derivation (§4). The server recomputes it on create.
-  const handover = addDays(eventDate, -1);
-  const takeback = addDays(eventDate, 1);
-
-  return (
-    <div className="mt-6 border border-gold/40 bg-sand/50 px-6 py-6">
-      <h3 className="font-display text-2xl text-ink">Available for Your Event</h3>
-
-      <dl className="mt-5 flex flex-wrap gap-x-10 gap-y-4 text-sm">
-        <div>
-          <dt className="eyebrow">Event Date</dt>
-          <dd className="mt-1 text-charcoal">{formatDate(eventDate)}</dd>
-        </div>
-        <div>
-          <dt className="eyebrow">Collection Date</dt>
-          <dd className="mt-1 text-charcoal">{formatDate(handover)}</dd>
-        </div>
-        <div>
-          <dt className="eyebrow">Return Date</dt>
-          <dd className="mt-1 text-charcoal">{formatDate(takeback)}</dd>
-        </div>
-      </dl>
-
-      {canBook ? (
-        <Button type="button" size="lg" className="mt-6" onClick={onBook}>
-          Reserve This Dress
-        </Button>
-      ) : (
-        <p className="mt-5 text-sm leading-relaxed text-graphite">
-          This gown cannot be reserved online yet. Leave your details below and
-          the branch will contact you.
-        </p>
-      )}
-    </div>
-  );
-}
-
-function UnavailableResult({
-  similarHref,
-  onChooseAnother,
-}: {
-  similarHref: string;
-  onChooseAnother: () => void;
-}) {
-  return (
-    <div className="mt-6 border border-line bg-offwhite px-6 py-6">
-      <h3 className="font-display text-2xl text-ink">Not Available for This Date</h3>
-      <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-stone">
-        This gown is spoken for around that date. Try another evening, or explore
-        other gowns at this branch.
-      </p>
-
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-        <Button type="button" variant="secondary" onClick={onChooseAnother}>
-          Choose Another Date
-        </Button>
-        <ButtonLink href={similarHref} variant="secondary">
-          View Similar Dresses
-        </ButtonLink>
-      </div>
+      <p className="mt-4 text-xs leading-relaxed text-mist">{GUIDANCE_NOTE}</p>
     </div>
   );
 }

@@ -30,13 +30,41 @@ export const IMAGE_ROOT = "/media";
  */
 export const EDITORIAL_IMAGES = {
   /** Landscape frame for the full-bleed homepage hero. */
-  hero: `${IMAGE_ROOT}/editorial/hero-noir-v2-wide.png`,
+  hero: `${IMAGE_ROOT}/editorial/hero-noir-v3-wide.png`,
   /** Tall crop, used on narrow screens where a wide frame loses the subject. */
   heroPortrait: `${IMAGE_ROOT}/editorial/hero-noir-v2-portrait.jpg`,
   story: `${IMAGE_ROOT}/editorial/story.jpg`,
 } as const;
 
 export type EditorialSlot = keyof typeof EDITORIAL_IMAGES;
+
+/**
+ * Homepage hero slides. Add, remove or reorder images here — the hero slider
+ * reads this array, so nothing else needs to change. `position` sets the CSS
+ * object-position so the subject stays framed across screen sizes.
+ *
+ * The first entry is the current hero. The others are stand-ins from existing
+ * editorial photography — swap them for the atelier's own wide hero images.
+ */
+export type HeroSlide = { src: string; alt: string; position?: string };
+
+export const HERO_SLIDES: HeroSlide[] = [
+  {
+    src: `${IMAGE_ROOT}/editorial/hero-noir-v3-wide.png`,
+    alt: "A model in a satin evening gown on a waterfront terrace at night",
+    position: "60% center",
+  },
+  {
+    src: `${IMAGE_ROOT}/editorial/branch-3.jpg`,
+    alt: "Inside an RS Atelier boutique",
+    position: "center",
+  },
+  {
+    src: `${IMAGE_ROOT}/editorial/branch-1.jpg`,
+    alt: "The RS Atelier showroom",
+    position: "center",
+  },
+];
 
 /** Stand-in branch interiors, cycled so each branch card differs. */
 const BRANCH_IMAGES = [
@@ -47,6 +75,25 @@ const BRANCH_IMAGES = [
 
 export function branchImage(index: number): string {
   return BRANCH_IMAGES[index % BRANCH_IMAGES.length];
+}
+
+/**
+ * Editorial image per occasion, keyed by the occasion label. These are the
+ * large cards in "Shop by Occasion". Drop the atelier's own photography into
+ * public/media/occasions/ (one modest-soirée, hijabi-model image per file) to
+ * replace the stand-ins — no code change needed.
+ */
+export const OCCASION_IMAGES: Record<string, string> = {
+  "Wedding Guest": `${IMAGE_ROOT}/occasions/wedding-guest-v1.jpg`,
+  Engagement: `${IMAGE_ROOT}/occasions/engagement.jpg`,
+  "Soirée": `${IMAGE_ROOT}/occasions/soiree-v1.jpg`,
+  "Evening & Gala": `${IMAGE_ROOT}/occasions/evening-gala.jpg`,
+  Graduation: `${IMAGE_ROOT}/occasions/graduation-v1.jpg`,
+  "Special Occasions": `${IMAGE_ROOT}/occasions/special-occasions.jpg`,
+};
+
+export function occasionImage(label: string): string | null {
+  return OCCASION_IMAGES[label] ?? null;
 }
 
 /**
@@ -92,6 +139,8 @@ export const ASPECT = {
   hero: "3 / 4",
   banner: "16 / 9",
   branch: "4 / 3",
+  /** Tall, immersive crop for the "Shop by Occasion" cards. */
+  occasion: "3 / 4",
 } as const;
 
 /**
@@ -100,8 +149,9 @@ export const ASPECT = {
  */
 export const IMAGE_SIZES = {
   productCard: "(min-width: 1024px) 31vw, (min-width: 640px) 47vw, 90vw",
-  productDetail: "(min-width: 1024px) 46vw, 92vw",
+  productDetail: "(min-width: 1024px) 55vw, 92vw",
   hero: "(min-width: 1024px) 48vw, 100vw",
   card: "(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw",
+  occasion: "(min-width: 1024px) 24vw, (min-width: 640px) 40vw, 64vw",
   full: "100vw",
 } as const;

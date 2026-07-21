@@ -44,7 +44,7 @@ export function LeadForm({
   }
 
   return (
-    <form action={formAction} className="max-w-lg" noValidate>
+    <form action={formAction} className="w-full" noValidate>
       {state.status === "error" ? (
         <div className="mb-6">
           <ErrorState title="We could not send that" body={state.error} />

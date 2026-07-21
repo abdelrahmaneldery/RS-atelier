@@ -6,7 +6,6 @@ import { toParagraphs } from "@/components/content/policy-page";
 import { ASPECT, EDITORIAL_IMAGES, IMAGE_SIZES } from "@/config/media";
 import { AtelierImage } from "@/components/ui/atelier-image";
 import { Container, Eyebrow, SectionHeading } from "@/components/ui/primitives";
-import { ButtonLink } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/reveal";
 
 export const metadata: Metadata = {
@@ -93,17 +92,6 @@ export default async function OurStoryPage() {
           </Reveal>
         </Container>
       </section>
-
-      <Container size="narrow" className="py-14 text-center lg:py-20">
-        <h2 className="text-[2rem] leading-tight sm:text-[2.5rem]">
-          Come and find yours.
-        </h2>
-        <div className="mt-8 flex justify-center">
-          <ButtonLink href="/branches" size="lg">
-            Browse the Wardrobe
-          </ButtonLink>
-        </div>
-      </Container>
     </>
   );
 }

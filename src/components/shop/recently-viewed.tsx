@@ -1,8 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/cn";
 import { ProductCard } from "@/components/catalogue/product-card";
-import { Container, Eyebrow } from "@/components/ui/primitives";
+import { Container } from "@/components/ui/primitives";
 import { useRecentlyViewed } from "@/components/shop/shop-store";
 import { useResolvedProducts } from "@/components/shop/use-resolved-products";
 
@@ -31,23 +30,16 @@ export function RecentlyViewed({
   return (
     <section aria-label={title} className={className}>
       <Container>
-        <Eyebrow gold className="mb-5">
+        <h2 className="mb-8 font-display text-[1.75rem] leading-none text-ink lg:text-[2.25rem]">
           {title}
-        </Eyebrow>
+        </h2>
 
-        {/* Scroll-snap rail on mobile; a 3/4-up grid from `sm` upward. */}
-        <ul
-          className={cn(
-            "flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2",
-            "[-ms-overflow-style:none] [scrollbar-width:none]",
-            "sm:grid sm:grid-cols-3 sm:gap-x-6 sm:gap-y-10 sm:overflow-visible",
-            "lg:grid-cols-4 xl:gap-x-8",
-          )}
-        >
+        {/* Horizontal scroll rail at every breakpoint. */}
+        <ul className="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2 sm:gap-6 lg:gap-8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {shown.map((product) => (
             <li
               key={product.id}
-              className="w-[62vw] shrink-0 snap-start sm:w-auto sm:shrink"
+              className="w-[62vw] shrink-0 snap-start sm:w-[40vw] lg:w-[23vw] xl:w-[20vw]"
             >
               <ProductCard product={product} />
             </li>

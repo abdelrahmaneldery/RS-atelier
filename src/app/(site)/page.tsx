@@ -11,10 +11,8 @@ import { ProductGrid } from "@/components/catalogue/product-card";
 import {
   OccasionCategories,
   SectionHead,
-  ServiceStrip,
   StorefrontHero,
 } from "@/components/home/storefront-sections";
-import { NewArrivalsFeature } from "@/components/home/new-arrivals-feature";
 import { RecentlyViewed } from "@/components/shop/recently-viewed";
 
 /**
@@ -40,10 +38,7 @@ export default async function HomePage() {
   const slug = selectedBranch.slug;
   const shopHref = `/branches/${slug}`;
 
-  const [trending, collections] = await Promise.all([
-    api.trending(slug, 8).catch(() => []),
-    api.collections(slug).catch(() => []),
-  ]);
+  const trending = await api.trending(slug, 8).catch(() => []);
 
   return (
     <>
@@ -51,26 +46,17 @@ export default async function HomePage() {
 
       <OccasionCategories shopHref={shopHref} />
 
-      {/* New Arrivals campaign + date finder + featured collections. */}
-      <NewArrivalsFeature
-        branchId={selectedBranch.id}
-        branchSlug={slug}
-        shopHref={shopHref}
-        collections={collections}
-      />
-
       {/* Trending — most requested at this branch. */}
       {trending.length > 0 ? (
         <section className="border-t border-line py-10 lg:py-14">
           <Container>
             <SectionHead
-              eyebrow="Most Requested"
               title="Trending Now"
               href={`${shopHref}?sort=trending`}
               linkLabel="View All"
             />
             <div className="mt-8">
-              <ProductGrid products={trending} />
+              <ProductGrid products={trending} layout="rail" />
             </div>
           </Container>
         </section>
@@ -81,8 +67,6 @@ export default async function HomePage() {
         title="Recently Viewed"
         className="border-t border-line py-10 lg:py-14"
       />
-
-      <ServiceStrip />
     </>
   );
 }

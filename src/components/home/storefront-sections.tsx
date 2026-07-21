@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import {
   BadgeCheck,
   CalendarCheck,
@@ -8,10 +7,11 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import { EDITORIAL_IMAGES, tintForColour } from "@/config/media";
+import { ASPECT, IMAGE_SIZES, occasionImage } from "@/config/media";
 import { OCCASION_CATEGORIES, SERVICE_POINTS } from "@/config/site";
+import { AtelierImage } from "@/components/ui/atelier-image";
 import { Container, Eyebrow } from "@/components/ui/primitives";
-import { ButtonLink } from "@/components/ui/button";
+import { HeroSlider } from "@/components/home/hero-slider";
 
 /**
  * Storefront building blocks for the branch homepage.
@@ -23,74 +23,47 @@ import { ButtonLink } from "@/components/ui/button";
 // --- 3. Compact hero / campaign banner -------------------------------------
 
 export function StorefrontHero({ shopHref }: { shopHref: string }) {
-  return (
-    // Full-viewport and pulled up behind the header, so the transparent bar
-    // floats over the image; padded back so the centred content clears it.
-    <section className="relative -mt-[var(--header-h)] flex min-h-svh items-center justify-center overflow-hidden pt-[var(--header-h)] text-center">
-      <Image
-        src={EDITORIAL_IMAGES.hero}
-        alt="RS Atelier campaign — a model in a beaded evening gown"
-        fill
-        priority
-        sizes="100vw"
-        className="object-cover object-[65%_center]"
-      />
-      {/* Subtle overlay: enough to carry centred white text, not so much that
-          the gown flattens to a silhouette. Slightly stronger in the middle. */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-ink/35"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-b from-ink/40 via-transparent to-ink/40"
-      />
-
-      <Container className="relative z-10 flex flex-col items-center py-24">
-        <h1
-          className="max-w-[16ch] text-[2.75rem] leading-[1.05] text-white sm:text-[3.5rem] lg:text-[4.5rem]"
-          style={{ textShadow: "0 2px 24px rgb(22 19 15 / 0.5)" }}
-        >
-          The New Season, One Piece at a Time.
-        </h1>
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-          <ButtonLink
-            href={shopHref}
-            size="lg"
-            className="border-white bg-white text-ink hover:border-white/90 hover:bg-white/90"
-          >
-            Shop the Collection
-          </ButtonLink>
-        </div>
-      </Container>
-    </section>
-  );
+  return <HeroSlider shopHref={shopHref} />;
 }
 
 // --- 4. Occasion categories -------------------------------------------------
 
 export function OccasionCategories({ shopHref }: { shopHref: string }) {
   return (
-    <section className="py-10 lg:py-14">
+    <section className="py-10 lg:py-16">
       <Container>
         <SectionHead title="Shop by Occasion" href={shopHref} linkLabel="All Gowns" />
-        <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {/* Horizontal scroll rail: cards scroll rather than wrapping into rows. */}
+        <ul className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 lg:gap-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {OCCASION_CATEGORIES.map((cat) => (
-            <li key={cat.label}>
+            <li
+              key={cat.label}
+              className="w-[64vw] shrink-0 snap-start sm:w-[40vw] lg:w-[24vw]"
+            >
               <Link
                 href={shopHref}
-                className="group relative flex aspect-[4/5] flex-col justify-end overflow-hidden border border-line"
+                className="group relative block overflow-hidden border border-line"
               >
+                {/* Large editorial image dominates the card. */}
+                <AtelierImage
+                  src={occasionImage(cat.label)}
+                  alt={`${cat.label} — modest occasion wear`}
+                  colour={cat.colour}
+                  aspect={ASPECT.occasion}
+                  sizes={IMAGE_SIZES.occasion}
+                />
+                {/* Dark gradient so the title stays readable near the bottom. */}
                 <span
                   aria-hidden="true"
-                  className="absolute inset-0 transition-transform duration-500 group-hover:scale-105"
-                  style={{
-                    background: `linear-gradient(160deg, ${tintForColour(cat.colour)} 0%, ${tintForColour(cat.colour)}cc 60%, #16130f 140%)`,
-                  }}
+                  className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/15 to-transparent transition-opacity duration-500 group-hover:from-ink/85"
                 />
-                <span className="absolute inset-0 bg-ink/10 transition-colors group-hover:bg-ink/25" />
-                <span className="relative z-10 p-3 font-display text-sm leading-tight text-white sm:text-base">
-                  {cat.label}
+                <span className="absolute inset-x-0 bottom-0 p-4 lg:p-6">
+                  <span
+                    className="font-display text-lg leading-tight text-white lg:text-2xl"
+                    style={{ textShadow: "0 2px 14px rgb(22 19 15 / 0.55)" }}
+                  >
+                    {cat.label}
+                  </span>
                 </span>
               </Link>
             </li>

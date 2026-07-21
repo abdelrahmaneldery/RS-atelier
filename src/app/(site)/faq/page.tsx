@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { SETTING_KEYS, getSetting, parseFaq } from "@/lib/settings";
 import {
   BUFFER_WORKING_DAYS,
-  DEPOSIT_PCT,
   HORIZON_DAYS,
   WINDOW_MAX_DAYS,
 } from "@/lib/domain/constants";
@@ -27,17 +26,27 @@ export default async function FaqPage() {
 
   const derived = [
     {
-      question: "Do I need an account to book?",
+      question: "Can I reserve a dress online?",
       answer:
-        "No. There is no login and no password. You book with your name and mobile number, and open your booking later with its reference and that same number.",
+        "No. The website is for browsing and checking availability. To arrange a rental, contact the branch team — they confirm the date and take you through everything in branch.",
+    },
+    {
+      question: "How do I check if a dress is free for my date?",
+      answer:
+        "Open the dress, choose your event date and press Check Availability. Availability is shown for guidance only and is confirmed by the branch team.",
+    },
+    {
+      question: "Do I pay anything through the website?",
+      answer:
+        "No. There are no online payments. Any deposit, balance and refundable insurance are arranged with the branch when you collect the gown.",
     },
     {
       question: "Can two people rent the same dress?",
       answer:
-        "No. Every gown is a single physical piece. Once it is reserved for a set of dates, nobody else can take it for any overlapping dates.",
+        "No. Every gown is a single physical piece, so it can only be worn by one person at a time for any overlapping dates.",
     },
     {
-      question: "How far ahead can I book?",
+      question: "How far ahead can I check availability?",
       answer: `Up to ${HORIZON_DAYS} days before your event. For anything further ahead, contact the branch directly.`,
     },
     {
@@ -45,17 +54,8 @@ export default async function FaqPage() {
       answer: `You collect the day before your event and return it the day after. A rental cannot run longer than ${WINDOW_MAX_DAYS} days.`,
     },
     {
-      question: "How much do I pay online?",
-      answer: `A ${Math.round(DEPOSIT_PCT * 100)}% deposit, paid when you confirm. The remaining balance and a refundable insurance amount are paid in branch when you collect.`,
-    },
-    {
-      question: "Why do I need to upload my ID?",
-      answer:
-        "Your identity document is held from the moment you confirm until you return the gown. It is released when the dress is checked back in, at the same time as your insurance.",
-    },
-    {
       question: "Why are some dates unavailable even though nobody is wearing the dress?",
-      answer: `After every rental, a gown leaves the wardrobe for ${BUFFER_WORKING_DAYS} working days to be cleaned and checked. Those days cannot be booked.`,
+      answer: `After every rental, a gown leaves the wardrobe for ${BUFFER_WORKING_DAYS} working days to be cleaned and checked. Those days are not available.`,
     },
     {
       question: "What does the condition band mean?",
@@ -63,14 +63,9 @@ export default async function FaqPage() {
         "Every gown shows Excellent, Good or Fair, based on how much repair work it has had over its life. It is there so you know what you are collecting.",
     },
     {
-      question: "Can I cancel?",
+      question: "A date I saw is no longer available. Why?",
       answer:
-        "Yes, any time before you collect. A deposit that has already been paid is not refunded, so confirm only when you are certain.",
-    },
-    {
-      question: "The dress I wanted was taken while I was deciding. Why?",
-      answer:
-        "Availability shown while browsing is not a hold. A gown is only yours once your booking is created, which is why a date can disappear between looking and booking.",
+        "Availability shown while browsing is guidance only, not a hold. The branch team confirms final availability when you arrange your rental.",
     },
   ];
 
@@ -107,9 +102,9 @@ export default async function FaqPage() {
 
       {published.length === 0 ? (
         <p className="mt-8 text-xs leading-relaxed text-mist">
-          These answers describe how the booking system actually works. For
-          questions about a specific gown, prices, or anything not covered here,
-          please contact the branch.
+          These answers describe how renting from RS Atelier works. For questions
+          about a specific gown, prices, or anything not covered here, please
+          contact the branch.
         </p>
       ) : null}
 

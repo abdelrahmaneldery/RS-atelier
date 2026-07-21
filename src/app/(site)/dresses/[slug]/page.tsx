@@ -15,6 +15,7 @@ import { Container } from "@/components/ui/primitives";
 import { ProductGallery } from "@/components/catalogue/product-gallery";
 import { AvailabilityCalendar } from "@/components/catalogue/availability-calendar";
 import { LeadForm } from "@/components/booking/lead-form";
+import { LeadSection } from "@/components/booking/lead-section";
 import { ViewRecorder } from "@/components/shop/view-recorder";
 
 type PageProps = { params: Promise<{ slug: string }> };
@@ -62,7 +63,6 @@ export default async function DressPage({ params }: PageProps) {
     selectedBranch !== null && selectedBranch.slug !== product.branch.slug;
 
   const title = `${product.colour ?? ""} ${product.silhouette ?? "Gown"}`.trim();
-  const canBook = product.price !== null;
 
   const specs: Array<{ label: string; value: string | null }> = [
     { label: "Fabric", value: product.fabric },
@@ -121,7 +121,7 @@ export default async function DressPage({ params }: PageProps) {
           </ol>
         </nav>
 
-        <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+        <div className="grid gap-10 lg:grid-cols-[3fr_2fr] lg:gap-16">
           <div>
             <ProductGallery
               images={product.images.map((i) => ({
@@ -158,21 +158,6 @@ export default async function DressPage({ params }: PageProps) {
               )}
             </p>
 
-            {product.price !== null && product.deposit !== null ? (
-              <p className="mt-2 text-sm text-stone">
-                {formatMoney(product.deposit, product.currency)} deposit online ·{" "}
-                {formatMoney(product.balance ?? 0, product.currency)} on
-                collection
-                {product.insuranceAmount ? (
-                  <>
-                    {" "}
-                    · {formatMoney(product.insuranceAmount, product.currency)}{" "}
-                    refundable insurance in branch
-                  </>
-                ) : null}
-              </p>
-            ) : null}
-
             <p className="mt-6 max-w-[52ch] leading-relaxed text-graphite">
               {product.description}
             </p>
@@ -181,26 +166,7 @@ export default async function DressPage({ params }: PageProps) {
               {HEALTH_BAND_DESCRIPTIONS[product.healthBand]}
             </p>
 
-            {/* Dress → free dates. */}
-            <section className="mt-10 border-t border-line pt-8">
-              <h2 className="font-display text-2xl text-ink">
-                Check Your Date
-              </h2>
-              <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-stone">
-                This gown is one of a kind, so it can only be worn by one person
-                at a time. Choose your event date within the next {HORIZON_DAYS}{" "}
-                days to check availability.
-              </p>
-
-              <AvailabilityCalendar
-                productSlug={product.slug}
-                freeDates={availability.dates}
-                canBook={canBook}
-                similarHref={`/branches/${product.branch.slug}`}
-              />
-            </section>
-
-            <dl className="mt-12 border-t border-line">
+            <dl className="mt-10 border-t border-line">
               {specs
                 .filter((s) => s.value)
                 .map((s) => (
@@ -213,29 +179,40 @@ export default async function DressPage({ params }: PageProps) {
                   </div>
                 ))}
             </dl>
+
+            {/* Dress → free dates. */}
+            <section className="mt-12 border-t border-line pt-8">
+              <h2 className="font-display text-2xl text-ink">
+                Check Your Date
+              </h2>
+              <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-stone">
+                This gown is one of a kind, so it can only be worn by one person
+                at a time. Choose your event date within the next {HORIZON_DAYS}{" "}
+                days to check availability.
+              </p>
+
+              <AvailabilityCalendar
+                productSlug={product.slug}
+                freeDates={availability.dates}
+                similarHref={`/branches/${product.branch.slug}`}
+              />
+            </section>
           </div>
         </div>
       </Container>
 
-      {/* Flow A — always available, whether or not the gown can be self-booked. */}
-      <section className="border-t border-line bg-ivory-deep py-14">
-        <Container size="narrow">
-          <h2 className="font-display text-2xl text-ink">
-            Prefer to speak to someone?
-          </h2>
-          <p className="mt-2 max-w-[56ch] text-sm leading-relaxed text-stone">
-            Leave your details and the {product.branch.name} team will call you.
-            This does not hold the gown.
-          </p>
-          <div className="mt-8">
-            <LeadForm
-              branchId={product.branch.id}
-              productId={product.id}
-              defaultNote={`Interested in the ${title}.`}
-            />
-          </div>
-        </Container>
-      </section>
+      {/* Enquiry — the only way to progress; reserving is done with the branch. */}
+      <LeadSection
+        id="request-a-call"
+        title="Prefer to speak to someone?"
+        description={`Leave your details and the ${product.branch.name} team will call you. This does not hold the gown.`}
+      >
+        <LeadForm
+          branchId={product.branch.id}
+          productId={product.id}
+          defaultNote={`Interested in the ${title}.`}
+        />
+      </LeadSection>
     </>
   );
 }

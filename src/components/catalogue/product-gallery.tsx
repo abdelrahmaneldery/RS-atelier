@@ -3,10 +3,17 @@
 import { useState } from "react";
 
 import { cn } from "@/lib/cn";
-import { ASPECT, IMAGE_SIZES } from "@/config/media";
+import { IMAGE_SIZES } from "@/config/media";
 import { AtelierImage } from "@/components/ui/atelier-image";
 
 export type GalleryImage = { id: string; imageUrl: string; altText: string };
+
+/**
+ * A tall editorial ratio for the detail hero, so the image dominates its column
+ * and closes the gap under it. Taller than the 3:4 catalogue crop; object-cover
+ * keeps full-length gowns framed without distortion.
+ */
+const DETAIL_ASPECT = "2 / 3";
 
 /**
  * Gallery for a single gown. Falls back to a tonal placeholder when no
@@ -33,7 +40,7 @@ export function ProductGallery({
         src={null}
         alt={images[0]?.altText ?? `${productName} occasion gown`}
         colour={colour}
-        aspect={ASPECT.product}
+        aspect={DETAIL_ASPECT}
         sizes={IMAGE_SIZES.productDetail}
         priority
         zoomOnHover={false}
@@ -50,7 +57,7 @@ export function ProductGallery({
           src={active.imageUrl}
           alt={active.altText}
           colour={colour}
-          aspect={ASPECT.product}
+          aspect={DETAIL_ASPECT}
           sizes={IMAGE_SIZES.productDetail}
           priority
           zoomOnHover={false}
@@ -82,7 +89,7 @@ export function ProductGallery({
                     src={image.imageUrl}
                     alt=""
                     colour={colour}
-                    aspect={ASPECT.product}
+                    aspect={DETAIL_ASPECT}
                     sizes="96px"
                     zoomOnHover={false}
                   />

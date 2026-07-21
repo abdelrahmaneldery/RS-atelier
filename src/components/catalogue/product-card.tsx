@@ -84,7 +84,7 @@ export function ProductCard({
               avail.free ? "bg-ivory/90 text-ink" : "bg-ink/70 text-ivory",
             )}
           >
-            {avail.free ? "Available" : "Reserved"}
+            {avail.free ? "Available" : "Unavailable"}
           </span>
         ) : null}
 
@@ -107,15 +107,17 @@ export function ProductCard({
           </Link>
         </h3>
 
-        <p className="mt-2.5 font-sans text-base font-semibold text-ink lg:text-lg">
-          {product.price === null ? (
-            "Price on request"
-          ) : (
-            <>
-              {formatMoney(product.price, product.currency)}{" "}
-              <span className="text-xs font-normal text-mist">per rental</span>
-            </>
-          )}
+        <p className="mt-2.5 flex flex-col font-sans">
+          <span className="text-base font-semibold text-ink lg:text-lg">
+            {product.price === null
+              ? "Price on request"
+              : formatMoney(product.price, product.currency)}
+          </span>
+          {product.price !== null ? (
+            <span className="mt-0.5 text-xs font-normal uppercase tracking-[0.1em] text-mist">
+              per rental
+            </span>
+          ) : null}
         </p>
       </div>
     </article>
@@ -129,42 +131,57 @@ export function ProductGrid({
   priorityCount = 0,
   className,
   availabilityFor,
-  reserveHrefFor,
+  layout = "grid",
 }: {
   products: ApiProductCard[];
   priorityCount?: number;
   className?: string;
   /** Per-product availability annotation (e.g. free on the chosen date). */
   availabilityFor?: (product: ApiProductCard) => CardAvailability;
-  /** Per-product "Book Now" target (e.g. the booking flow for a chosen date). */
-  reserveHrefFor?: (product: ApiProductCard) => string;
+  /** "grid" (default) wraps into rows; "rail" is a horizontal scroll strip. */
+  layout?: "grid" | "rail";
 }) {
   const [quickView, setQuickView] = useState<ApiProductCard | null>(null);
 
+  const renderCard = (product: ApiProductCard, index: number) => (
+    <ProductCard
+      product={product}
+      priority={index < priorityCount}
+      availability={availabilityFor?.(product)}
+      onQuickView={() => setQuickView(product)}
+    />
+  );
+
   return (
     <>
-      <div
-        className={cn(
-          "grid grid-cols-2 gap-x-5 gap-y-12 sm:gap-x-6 lg:grid-cols-3 lg:gap-x-8 xl:grid-cols-4",
-          className,
-        )}
-      >
-        {products.map((product, index) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            priority={index < priorityCount}
-            availability={availabilityFor?.(product)}
-            onQuickView={() => setQuickView(product)}
-          />
-        ))}
-      </div>
+      {layout === "rail" ? (
+        <ul className="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2 sm:gap-6 lg:gap-8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {products.map((product, index) => (
+            <li
+              key={product.id}
+              className="w-[62vw] shrink-0 snap-start sm:w-[40vw] lg:w-[23vw] xl:w-[20vw]"
+            >
+              {renderCard(product, index)}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div
+          className={cn(
+            "grid grid-cols-2 gap-x-5 gap-y-12 sm:gap-x-6 lg:grid-cols-3 lg:gap-x-8 xl:grid-cols-4",
+            className,
+          )}
+        >
+          {products.map((product, index) => (
+            <div key={product.id}>{renderCard(product, index)}</div>
+          ))}
+        </div>
+      )}
 
       {quickView ? (
         <QuickView
           product={quickView}
           availability={availabilityFor?.(quickView) ?? conditionAvailability(quickView)}
-          reserveHref={reserveHrefFor?.(quickView) ?? `/dresses/${quickView.slug}`}
           onClose={() => setQuickView(null)}
         />
       ) : null}
@@ -197,12 +214,10 @@ export function ProductGridSkeleton({ count = 8 }: { count?: number }) {
 function QuickView({
   product,
   availability,
-  reserveHref,
   onClose,
 }: {
   product: ApiProductCard;
   availability: CardAvailability;
-  reserveHref: string;
   onClose: () => void;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -297,11 +312,8 @@ function QuickView({
               </p>
             ) : null}
 
-            <div className="mt-6 flex flex-col gap-2">
-              <ButtonLink href={reserveHref} className="w-full">
-                Book Now
-              </ButtonLink>
-              <ButtonLink href={href} variant="secondary" className="w-full">
+            <div className="mt-6">
+              <ButtonLink href={href} className="w-full">
                 View Full Details
               </ButtonLink>
             </div>
