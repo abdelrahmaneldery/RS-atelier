@@ -78,12 +78,9 @@ export function Select({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(selectedIndex);
   const [pop, setPop] = useState<PopStyle | null>(null);
-  const [mounted, setMounted] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const listboxId = useId();
-
-  useEffect(() => setMounted(true), []);
 
   function computePop() {
     const el = triggerRef.current;
@@ -207,7 +204,7 @@ export function Select({
         />
       </button>
 
-      {open && mounted && pop
+      {open && pop
         ? createPortal(
             <ul
               ref={listRef}

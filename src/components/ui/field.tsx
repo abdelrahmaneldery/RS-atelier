@@ -113,31 +113,9 @@ export function Textarea({
   );
 }
 
-export function Select({
-  error,
-  className,
-  children,
-  ...props
-}: ComponentProps<"select"> & { error?: boolean }) {
-  return (
-    <select
-      className={cn(
-        CONTROL,
-        error ? CONTROL_ERROR : CONTROL_OK,
-        "appearance-none bg-[length:14px] bg-[right_0.9rem_center] bg-no-repeat pr-10",
-        className,
-      )}
-      style={{
-        backgroundImage:
-          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%237a7267' stroke-width='1.5'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E\")",
-      }}
-      aria-invalid={error || undefined}
-      {...props}
-    >
-      {children}
-    </select>
-  );
-}
+// The dropdown is a shared custom listbox (no native <select>, no blue browser
+// menu). Re-exported here so every `@/components/ui/field` import keeps working.
+export { Select } from "./select";
 
 export function Checkbox({
   label,
