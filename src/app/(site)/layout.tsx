@@ -1,6 +1,7 @@
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { MobileCta } from "@/components/layout/mobile-cta";
+import { MotionProvider } from "@/components/ui/motion-provider";
 import { BranchGate } from "@/components/branch/branch-gate";
 import { SETTING_KEYS, getSetting } from "@/lib/settings";
 import { api } from "@/lib/api/client";
@@ -32,7 +33,7 @@ export default async function SiteLayout({
   const showGate = !selectedBranch && !gateDismissed && branches.length > 0;
 
   return (
-    <>
+    <MotionProvider>
       <Header
         announcement={announcement.value}
         branches={branches}
@@ -46,6 +47,6 @@ export default async function SiteLayout({
       <MobileCta />
 
       {showGate ? <BranchGate branches={branches} /> : null}
-    </>
+    </MotionProvider>
   );
 }

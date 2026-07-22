@@ -128,7 +128,7 @@ export function DatePicker({
             aria-modal="true"
             aria-label="Choose an event date"
             className={cn(
-              "z-50 border border-line bg-ivory p-4 shadow-raised",
+              "animate-dropdown z-50 border border-line bg-ivory p-4 shadow-raised",
               "max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:pb-7",
               "sm:absolute sm:mt-2 sm:w-[20.5rem]",
             )}

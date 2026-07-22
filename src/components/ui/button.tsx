@@ -13,7 +13,10 @@ type Size = "sm" | "md" | "lg";
 
 const BASE =
   "inline-flex items-center justify-center gap-2 font-sans font-medium " +
-  "uppercase tracking-[0.14em] transition-colors duration-200 " +
+  "uppercase tracking-[0.14em] " +
+  // Colour and a whisper of press feedback animate on the house easing.
+  "transition-[color,background-color,border-color,transform] duration-200 " +
+  "ease-[cubic-bezier(0.22,0.61,0.36,1)] active:scale-[0.985] " +
   "disabled:pointer-events-none disabled:opacity-40 disabled:saturate-0 " +
   // Touch targets stay comfortable on mobile (§31).
   "min-h-11 text-center";

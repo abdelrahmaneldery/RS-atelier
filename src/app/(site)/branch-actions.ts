@@ -51,7 +51,9 @@ export async function dismissBranchGate(): Promise<void> {
   store.set(GATE_DISMISSED_COOKIE, "1", {
     httpOnly: false,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    // Not secure — see branchCookieOptions: a secure cookie is dropped over
+    // http, which would re-open the gate on every refresh.
+    secure: false,
     path: "/",
   });
 }

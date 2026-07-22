@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
+import { motion, useReducedMotion } from "motion/react";
 
-import { cn } from "@/lib/cn";
+import { revealProps } from "@/lib/motion";
 
 /**
  * Fade-up on first entry into the viewport (§32).
  *
- * Reveals once and then stops observing — nothing on this site should keep
- * moving as the customer reads. Users who prefer reduced motion see the content
- * immediately: the transition is neutralised in globals.css, and the observer
- * is skipped entirely so nothing is ever hidden from them.
+ * Reveals once and then stays put — nothing on this site should keep moving as
+ * the customer reads. Users who prefer reduced motion get the content
+ * immediately, with no transform and nothing ever hidden. Same API as before
+ * (children, delay in ms, className); the motion config lives in @/lib/motion.
  */
 export function Reveal({
   children,
@@ -21,41 +22,15 @@ export function Reveal({
   delay?: number;
   className?: string;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+  const reduceMotion = useReducedMotion();
 
-  useEffect(() => {
-    // Reduced motion is handled entirely in CSS: globals.css forces .reveal to
-    // full opacity under prefers-reduced-motion, so there is nothing to observe
-    // and nothing to reveal. Bailing out here keeps content visible either way.
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const element = ref.current;
-    if (!element) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setVisible(true);
-            observer.disconnect();
-          }
-        }
-      },
-      { rootMargin: "0px 0px -8% 0px", threshold: 0.05 },
-    );
-
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
+  if (reduceMotion) {
+    return <div className={className}>{children}</div>;
+  }
 
   return (
-    <div
-      ref={ref}
-      className={cn("reveal", visible && "reveal-visible", className)}
-      style={delay ? { transitionDelay: `${delay}ms` } : undefined}
-    >
+    <motion.div className={className} {...revealProps(delay)}>
       {children}
-    </div>
+    </motion.div>
   );
 }

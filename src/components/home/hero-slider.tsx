@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
+import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/cn";
@@ -42,8 +43,12 @@ export function HeroSlider({ shopHref }: { shopHref: string }) {
 
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [grabbing, setGrabbing] = useState(false);
   const reducedMotion = usePrefersReducedMotion();
   const touchX = useRef<number | null>(null);
+  // Desktop mouse drag mirrors the touch swipe below — a crossfade has no scroll
+  // to move, so it reuses the same next/prev on a horizontal drag of >40px.
+  const pointerX = useRef<number | null>(null);
 
   const autoplay = count > 1 && !paused && !reducedMotion;
 
@@ -63,7 +68,15 @@ export function HeroSlider({ shopHref }: { shopHref: string }) {
     <section
       aria-roledescription="carousel"
       aria-label="Featured looks"
-      className="relative -mt-[var(--header-h)] flex min-h-svh items-center justify-center overflow-hidden pt-[var(--header-h)] text-center"
+      className={cn(
+        "relative -mt-[var(--header-h)] flex min-h-svh select-none items-center justify-center overflow-hidden pt-[var(--header-h)] text-center",
+        // Grab affordance on desktop; links/buttons keep their pointer cursor.
+        count > 1 &&
+          cn(
+            grabbing ? "cursor-grabbing" : "cursor-grab",
+            "[&_a]:cursor-pointer [&_button]:cursor-pointer",
+          ),
+      )}
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
       onTouchStart={(e) => {
@@ -78,6 +91,29 @@ export function HeroSlider({ shopHref }: { shopHref: string }) {
         const dx = (e.changedTouches[0]?.clientX ?? start) - start;
         if (Math.abs(dx) > 40) (dx < 0 ? next : prev)();
       }}
+      onPointerDown={(e) => {
+        if (e.pointerType !== "mouse" || e.button !== 0 || count < 2) return;
+        pointerX.current = e.clientX;
+        setGrabbing(true);
+        setPaused(true);
+      }}
+      onPointerUp={(e) => {
+        if (e.pointerType !== "mouse") return;
+        const start = pointerX.current;
+        pointerX.current = null;
+        setGrabbing(false);
+        setPaused(false);
+        if (start == null || count < 2) return;
+        const dx = e.clientX - start;
+        if (Math.abs(dx) > 40) (dx < 0 ? next : prev)();
+      }}
+      onPointerLeave={() => {
+        if (pointerX.current == null) return;
+        pointerX.current = null;
+        setGrabbing(false);
+        setPaused(false);
+      }}
+      onDragStart={(e) => e.preventDefault()}
     >
       {/* Slides — stacked and crossfaded. First is priority; height is fixed by
           the section, so swapping images never shifts layout. */}
@@ -91,15 +127,22 @@ export function HeroSlider({ shopHref }: { shopHref: string }) {
             i === index ? "opacity-100" : "opacity-0",
           )}
         >
-          <Image
-            src={slide.src}
-            alt={i === index ? slide.alt : ""}
-            fill
-            priority={i === 0}
-            sizes="100vw"
-            className="object-cover"
-            style={{ objectPosition: slide.position ?? "center" }}
-          />
+          {/* Very slow, subtle zoom on the active slide (a quiet Ken Burns). */}
+          <motion.div
+            className="absolute inset-0"
+            animate={{ scale: !reducedMotion && i === index ? 1.06 : 1 }}
+            transition={{ duration: i === index ? 7 : 0, ease: "linear" }}
+          >
+            <Image
+              src={slide.src}
+              alt={i === index ? slide.alt : ""}
+              fill
+              priority={i === 0}
+              sizes="100vw"
+              className="object-cover"
+              style={{ objectPosition: slide.position ?? "center" }}
+            />
+          </motion.div>
         </div>
       ))}
 

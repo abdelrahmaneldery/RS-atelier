@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       // Private to an individual customer, and of no search value.
-      disallow: ["/book/confirmed/", "/booking-lookup"],
+      disallow: ["/book/confirmed/"],
     },
     sitemap: `${siteUrl()}/sitemap.xml`,
   };

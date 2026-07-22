@@ -26,7 +26,11 @@ export function branchCookieOptions() {
   return {
     httpOnly: false,
     sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
+    // Deliberately NOT secure. The value is a public branch slug, not a secret,
+    // and a `secure` cookie is silently dropped by the browser on any non-HTTPS
+    // origin (e.g. a production build served over http://localhost) — which made
+    // the branch reset on every refresh, sending the customer back to the gate.
+    secure: false,
     path: "/",
     maxAge: COOKIE_MAX_AGE,
   };

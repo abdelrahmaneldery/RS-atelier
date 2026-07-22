@@ -5,6 +5,7 @@ import { useState } from "react";
 import { cn } from "@/lib/cn";
 import { IMAGE_SIZES } from "@/config/media";
 import { AtelierImage } from "@/components/ui/atelier-image";
+import { DragScroll } from "@/components/ui/drag-scroll";
 
 export type GalleryImage = { id: string; imageUrl: string; altText: string };
 
@@ -65,7 +66,7 @@ export function ProductGallery({
       </div>
 
       {usable.length > 1 ? (
-        <ul
+        <DragScroll
           className="flex gap-3 overflow-x-auto lg:w-24 lg:flex-col lg:overflow-visible"
           aria-label={`${productName} images`}
         >
@@ -97,7 +98,7 @@ export function ProductGallery({
               </li>
             );
           })}
-        </ul>
+        </DragScroll>
       ) : null}
     </div>
   );

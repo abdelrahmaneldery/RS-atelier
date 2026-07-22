@@ -13,7 +13,7 @@ export const SITE = {
   tagline: "Atelier",
   establishedYear: 2019,
   description:
-    "One-of-one occasion gowns, rented by the night. Choose your branch, check availability for your date, and reserve with the branch team.",
+    "One-of-one occasion gowns, rented by the night. Choose your branch, check availability for your date, and contact the branch team to continue.",
 } as const;
 
 export type NavLink = {
@@ -108,7 +108,7 @@ export const WHY_RS = [
   {
     icon: "reserve",
     title: "Check Availability",
-    body: "See the real available dates for each gown, then reserve with the branch team.",
+    body: "See the real available dates for each gown, then contact the branch team to continue.",
     href: "/branches",
   },
   {

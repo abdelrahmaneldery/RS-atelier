@@ -11,6 +11,7 @@ import { ASPECT, IMAGE_SIZES, occasionImage } from "@/config/media";
 import { OCCASION_CATEGORIES, SERVICE_POINTS } from "@/config/site";
 import { AtelierImage } from "@/components/ui/atelier-image";
 import { Container, Eyebrow } from "@/components/ui/primitives";
+import { DragScroll } from "@/components/ui/drag-scroll";
 import { HeroSlider } from "@/components/home/hero-slider";
 
 /**
@@ -34,7 +35,7 @@ export function OccasionCategories({ shopHref }: { shopHref: string }) {
       <Container>
         <SectionHead title="Shop by Occasion" href={shopHref} linkLabel="All Gowns" />
         {/* Horizontal scroll rail: cards scroll rather than wrapping into rows. */}
-        <ul className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 lg:gap-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <DragScroll className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 lg:gap-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {OCCASION_CATEGORIES.map((cat) => (
             <li
               key={cat.label}
@@ -68,7 +69,7 @@ export function OccasionCategories({ shopHref }: { shopHref: string }) {
               </Link>
             </li>
           ))}
-        </ul>
+        </DragScroll>
       </Container>
     </section>
   );

@@ -11,6 +11,7 @@ import { addDays, toDateKey } from "@/lib/domain/dates";
 import type { ApiProductCard, ApiCollection } from "@/lib/api/contract";
 import { Container, EmptyState } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
+import { DragScroll } from "@/components/ui/drag-scroll";
 import { Input, Select } from "@/components/ui/field";
 import { ProductGrid, type CardAvailability } from "@/components/catalogue/product-card";
 import { shopAvailability } from "@/app/(site)/shop/actions";
@@ -229,7 +230,7 @@ export function ShopClient({
       {/* 2. Horizontal categories ------------------------------------------ */}
       <div className="mt-8 border-y border-line">
         <Container>
-          <ul className="-mx-1 flex gap-2 overflow-x-auto py-4">
+          <DragScroll className="-mx-1 flex gap-2 overflow-x-auto py-4">
             {SHOP_CATEGORIES.map((c) => {
               const active = category === c.label;
               return (
@@ -250,7 +251,7 @@ export function ShopClient({
                 </li>
               );
             })}
-          </ul>
+          </DragScroll>
         </Container>
       </div>
 

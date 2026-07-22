@@ -116,7 +116,7 @@ export function BranchSwitcher({
         <div
           role="listbox"
           aria-label="Choose a branch"
-          className="absolute right-0 top-full z-50 mt-1 w-64 border border-line bg-offwhite shadow-raised"
+          className="animate-dropdown absolute right-0 top-full z-50 mt-1 w-64 border border-line bg-offwhite shadow-raised"
         >
           <p className="border-b border-line px-4 py-3 text-[0.625rem] uppercase tracking-[0.14em] text-stone">
             Explore another branch

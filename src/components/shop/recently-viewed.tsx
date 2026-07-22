@@ -2,6 +2,7 @@
 
 import { ProductCard } from "@/components/catalogue/product-card";
 import { Container } from "@/components/ui/primitives";
+import { DragScroll } from "@/components/ui/drag-scroll";
 import { useRecentlyViewed } from "@/components/shop/shop-store";
 import { useResolvedProducts } from "@/components/shop/use-resolved-products";
 
@@ -35,7 +36,7 @@ export function RecentlyViewed({
         </h2>
 
         {/* Horizontal scroll rail at every breakpoint. */}
-        <ul className="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2 sm:gap-6 lg:gap-8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <DragScroll className="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2 sm:gap-6 lg:gap-8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {shown.map((product) => (
             <li
               key={product.id}
@@ -44,7 +45,7 @@ export function RecentlyViewed({
               <ProductCard product={product} />
             </li>
           ))}
-        </ul>
+        </DragScroll>
       </Container>
     </section>
   );

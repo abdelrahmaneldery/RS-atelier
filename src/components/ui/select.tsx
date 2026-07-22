@@ -220,7 +220,7 @@ export function Select({
                 maxHeight: pop.maxHeight,
                 ...("top" in pop ? { top: pop.top } : { bottom: pop.bottom }),
               }}
-              className="z-[100] overflow-auto border border-line bg-ivory py-1 shadow-raised focus:outline-none"
+              className="animate-dropdown z-[100] overflow-auto border border-line bg-ivory py-1 shadow-raised focus:outline-none"
             >
               {options.map((o, i) => {
                 const isSel = i === selectedIndex;

@@ -3,7 +3,9 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { AnimatePresence, motion } from "motion/react";
 
+import { fadeUp, overlayFade } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 import { branchImage } from "@/config/media";
 import type { ApiBranch } from "@/lib/api/contract";
@@ -70,20 +72,26 @@ export function BranchGate({ branches }: { branches: ApiBranch[] }) {
     });
   }
 
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-[90] overflow-y-auto bg-ink/92 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="branch-gate-title"
-    >
-      <div
-        ref={panelRef}
-        tabIndex={-1}
-        className="mx-auto flex min-h-full w-full max-w-[1200px] flex-col justify-center px-5 py-14 focus:outline-none sm:px-8 lg:py-20"
-      >
+    <AnimatePresence>
+      {open ? (
+        <motion.div
+          key="branch-gate"
+          variants={overlayFade}
+          initial="hidden"
+          animate="show"
+          exit="exit"
+          className="fixed inset-0 z-[90] overflow-y-auto bg-ink/92 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="branch-gate-title"
+        >
+          <motion.div
+            variants={fadeUp}
+            ref={panelRef}
+            tabIndex={-1}
+            className="mx-auto flex min-h-full w-full max-w-[1200px] flex-col justify-center px-5 py-14 focus:outline-none sm:px-8 lg:py-20"
+          >
         <header className="text-center">
           <p className="eyebrow text-gold-soft">Rawan Samir Atelier</p>
           <h2
@@ -183,7 +191,9 @@ export function BranchGate({ branches }: { branches: ApiBranch[] }) {
             I&rsquo;ll choose later
           </button>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }

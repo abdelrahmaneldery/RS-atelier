@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Eye, X } from "lucide-react";
 
+import { modalPanel, overlayFade } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 import { IMAGE_SIZES } from "@/config/media";
 import { formatMoney } from "@/lib/format";
@@ -11,6 +13,7 @@ import { HEALTH_BAND_LABELS } from "@/lib/domain/constants";
 import type { ApiProductCard } from "@/lib/api/contract";
 import { AtelierImage } from "@/components/ui/atelier-image";
 import { ButtonLink } from "@/components/ui/button";
+import { DragScroll } from "@/components/ui/drag-scroll";
 
 /**
  * The single dress card used across the whole site — catalogue, shop, home
@@ -63,7 +66,12 @@ export function ProductCard({
   const avail = availability ?? conditionAvailability(product);
 
   return (
-    <article className={cn("group flex flex-col", className)}>
+    <article
+      className={cn(
+        "group flex flex-col transition-transform duration-500 ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:-translate-y-1",
+        className,
+      )}
+    >
       <div className="relative">
         <Link href={href} className="block focus-visible:outline-offset-4">
           <AtelierImage
@@ -155,7 +163,7 @@ export function ProductGrid({
   return (
     <>
       {layout === "rail" ? (
-        <ul className="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2 sm:gap-6 lg:gap-8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <DragScroll className="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2 sm:gap-6 lg:gap-8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {products.map((product, index) => (
             <li
               key={product.id}
@@ -164,7 +172,7 @@ export function ProductGrid({
               {renderCard(product, index)}
             </li>
           ))}
-        </ul>
+        </DragScroll>
       ) : (
         <div
           className={cn(
@@ -178,13 +186,16 @@ export function ProductGrid({
         </div>
       )}
 
-      {quickView ? (
-        <QuickView
-          product={quickView}
-          availability={availabilityFor?.(quickView) ?? conditionAvailability(quickView)}
-          onClose={() => setQuickView(null)}
-        />
-      ) : null}
+      <AnimatePresence>
+        {quickView ? (
+          <QuickView
+            key="quick-view"
+            product={quickView}
+            availability={availabilityFor?.(quickView) ?? conditionAvailability(quickView)}
+            onClose={() => setQuickView(null)}
+          />
+        ) : null}
+      </AnimatePresence>
     </>
   );
 }
@@ -237,15 +248,22 @@ function QuickView({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center">
+    <motion.div
+      variants={overlayFade}
+      initial="hidden"
+      animate="show"
+      exit="exit"
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/50 sm:items-center"
+    >
       <button
         type="button"
         aria-label="Close quick view"
         onClick={onClose}
-        className="absolute inset-0 h-full w-full cursor-default bg-ink/50"
+        className="absolute inset-0 h-full w-full cursor-default"
       />
-      <div
+      <motion.div
         ref={panelRef}
+        variants={modalPanel}
         tabIndex={-1}
         role="dialog"
         aria-modal="true"
@@ -319,7 +337,7 @@ function QuickView({
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

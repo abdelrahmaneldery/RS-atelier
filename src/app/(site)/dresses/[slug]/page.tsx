@@ -10,6 +10,7 @@ import {
 } from "@/lib/domain/constants";
 import { JsonLd, productJsonLd } from "@/lib/seo";
 import { getSelectedBranch } from "@/lib/branch-selection";
+import { getSetting, SETTING_KEYS } from "@/lib/settings";
 import { CrossBranchNotice } from "@/components/branch/cross-branch-notice";
 import { Container } from "@/components/ui/primitives";
 import { ProductGallery } from "@/components/catalogue/product-gallery";
@@ -53,9 +54,10 @@ export default async function DressPage({ params }: PageProps) {
     throw error;
   }
 
-  const [availability, selectedBranch] = await Promise.all([
+  const [availability, selectedBranch, whatsapp] = await Promise.all([
     api.productAvailability(slug),
     getSelectedBranch(),
+    getSetting(SETTING_KEYS.contactWhatsapp),
   ]);
 
   // Never silently mix branches: a gown from elsewhere is shown, but flagged.
@@ -193,8 +195,18 @@ export default async function DressPage({ params }: PageProps) {
 
               <AvailabilityCalendar
                 productSlug={product.slug}
+                productId={product.id}
+                productName={title}
+                productImage={{
+                  url: product.primaryImage?.url ?? null,
+                  alt: product.primaryImage?.altText ?? `${title} occasion gown`,
+                }}
+                productColour={product.colour}
+                branchId={product.branch.id}
+                branchName={product.branch.name}
                 freeDates={availability.dates}
                 similarHref={`/branches/${product.branch.slug}`}
+                whatsappNumber={whatsapp.isUnset ? null : whatsapp.value}
               />
             </section>
           </div>

@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Menu, ShoppingBag, X } from "lucide-react";
 
+import { drawerRight, overlayFade } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 import { PRIMARY_NAV, UTILITY_NAV, type NavLink } from "@/config/site";
 import type { ApiBranch } from "@/lib/api/contract";
@@ -223,32 +225,26 @@ export function Header({
         </div>
       </header>
 
-      {menuOpen ? (
-        <MobileDrawer
-          onClose={() => setMenuOpen(false)}
-          branches={branches}
-          selectedBranch={selectedBranch}
-          pageBranchSlug={pageBranchSlug}
-          nav={nav}
-          utilities={utilities}
-        />
-      ) : null}
+      <AnimatePresence>
+        {menuOpen ? (
+          <MobileDrawer
+            key="mobile-drawer"
+            onClose={() => setMenuOpen(false)}
+            nav={nav}
+            utilities={utilities}
+          />
+        ) : null}
+      </AnimatePresence>
     </>
   );
 }
 
 function MobileDrawer({
   onClose,
-  branches,
-  selectedBranch,
-  pageBranchSlug,
   nav,
   utilities,
 }: {
   onClose: () => void;
-  branches: ApiBranch[];
-  selectedBranch: ApiBranch | null;
-  pageBranchSlug?: string;
   nav: NavLink[];
   utilities: NavLink[];
 }) {
@@ -264,14 +260,21 @@ function MobileDrawer({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[70] lg:hidden">
-      <button
+    <motion.div
+      initial="hidden"
+      animate="show"
+      exit="exit"
+      className="fixed inset-0 z-[70] lg:hidden"
+    >
+      <motion.button
+        variants={overlayFade}
         type="button"
         aria-label="Close menu"
         onClick={onClose}
         className="absolute inset-0 h-full w-full cursor-default bg-ink/45"
       />
-      <div
+      <motion.div
+        variants={drawerRight}
         ref={panelRef}
         tabIndex={-1}
         role="dialog"
@@ -303,16 +306,6 @@ function MobileDrawer({
           ))}
         </nav>
 
-        {selectedBranch ? (
-          <div className="border-b border-line px-5 py-4">
-            <BranchSwitcher
-              branches={branches}
-              selected={selectedBranch}
-              pageBranchSlug={pageBranchSlug}
-            />
-          </div>
-        ) : null}
-
         <div className="flex flex-col gap-1 px-5 pb-4">
           {utilities.map((link) => (
             <Link
@@ -334,7 +327,7 @@ function MobileDrawer({
             Find Your Gown
           </Link>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
