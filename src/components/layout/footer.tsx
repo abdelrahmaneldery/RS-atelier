@@ -1,7 +1,8 @@
 import Link from "next/link";
 
-import { FOOTER_NAV, SITE } from "@/config/site";
+import { FOOTER_NAV, SITE, mapsUrl } from "@/config/site";
 import { Logo } from "@/components/layout/logo";
+import { SocialLinks } from "@/components/layout/social-links";
 import { SETTING_KEYS, getSetting } from "@/lib/settings";
 import { formatPhone, whatsappLink } from "@/lib/phone";
 import { parseOpeningHours } from "@/lib/format";
@@ -22,9 +23,6 @@ export async function Footer() {
   ]);
   const hours = parseOpeningHours(openingHours.value);
 
-  const hasAnyContact =
-    !phone.isUnset || !whatsapp.isUnset || !email.isUnset || hours.length > 0;
-
   return (
     <footer className="mt-24 border-t border-line-dark bg-ink text-ivory">
       <div className="mx-auto w-full max-w-[1400px] px-5 py-16 sm:px-8 lg:px-12 lg:py-20">
@@ -35,6 +33,10 @@ export async function Footer() {
               Curated occasion wear, rented by private appointment. Established{" "}
               {SITE.establishedYear}.
             </p>
+            <SocialLinks
+              className="-ml-2 mt-5"
+              linkClassName="text-ivory/60 hover:text-ivory"
+            />
           </div>
 
           {FOOTER_NAV.map((group) => (
@@ -63,8 +65,21 @@ export async function Footer() {
             Contact
           </h2>
 
-          {hasAnyContact ? (
-            <dl className="mt-5 grid gap-x-8 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <dl className="mt-5 grid gap-x-8 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <dt className="text-ivory/45">Address</dt>
+                <dd className="mt-1">
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="link-underline text-ivory/85"
+                  >
+                    {SITE.address}
+                  </a>
+                </dd>
+              </div>
+
               {!phone.isUnset ? (
                 <div>
                   <dt className="text-ivory/45">Phone</dt>
@@ -121,14 +136,7 @@ export async function Footer() {
                   </dd>
                 </div>
               ) : null}
-            </dl>
-          ) : (
-            /* Nothing is invented — the atelier publishes these in /admin. */
-            <p className="mt-4 max-w-[52ch] text-sm leading-relaxed text-ivory/50">
-              Contact details have not been published yet. Please use the
-              appointment request form and the atelier team will be in touch.
-            </p>
-          )}
+          </dl>
         </div>
 
         <div className="mt-14 flex flex-col gap-4 border-t border-line-dark pt-8 sm:flex-row sm:items-center sm:justify-between">

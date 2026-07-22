@@ -114,18 +114,9 @@ export function Header({
             : "border-line bg-offwhite/95 shadow-subtle backdrop-blur-sm",
         )}
       >
-        {/* Mobile / tablet header: one clean row — logo · branch · menu (< lg). */}
+        {/* Mobile / tablet header: one clean row — logo · menu (< lg). */}
         <div className="flex h-full items-center justify-between gap-2 px-4 lg:hidden">
           <Logo onDark={overHero} className="shrink-0" />
-          {selectedBranch ? (
-            <BranchSwitcher
-              branches={branches}
-              selected={selectedBranch}
-              onDark={overHero}
-              pageBranchSlug={pageBranchSlug}
-              className="min-w-0"
-            />
-          ) : null}
           <button
             type="button"
             onClick={() => setMenuOpen(true)}

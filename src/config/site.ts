@@ -14,7 +14,31 @@ export const SITE = {
   establishedYear: 2019,
   description:
     "One-of-one occasion gowns, rented by the night. Choose your branch, check availability for your date, and contact the branch team to continue.",
+  address:
+    "47 Mohammed Hussein Haykal, Al Mintaqah as Sādisah, Nasr City, Cairo Governorate 4450320",
 } as const;
+
+/** Opens the address in the user's maps app. */
+export const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+  SITE.address,
+)}`;
+
+/**
+ * Public social profiles. `icon` maps to a lucide icon in the SocialLinks
+ * component; each opens in a new tab.
+ */
+export const SOCIAL_LINKS = [
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/irawansamirr/?hl=en",
+    icon: "instagram" as const,
+  },
+  {
+    label: "Facebook",
+    href: "https://www.facebook.com/p/Irawansamir-100084751451593/",
+    icon: "facebook" as const,
+  },
+] as const;
 
 export type NavLink = {
   label: string;

@@ -4,7 +4,9 @@ import { SETTING_KEYS, getSetting } from "@/lib/settings";
 import { getSelectedBranch } from "@/lib/branch-selection";
 import { formatPhone, telLink, whatsappLink } from "@/lib/phone";
 import { parseOpeningHours } from "@/lib/format";
+import { SITE, mapsUrl } from "@/config/site";
 import { Container, DetailRow, SectionHeading } from "@/components/ui/primitives";
+import { SocialLinks } from "@/components/layout/social-links";
 import { LeadForm } from "@/components/booking/lead-form";
 import { LeadSection } from "@/components/booking/lead-section";
 
@@ -32,8 +34,6 @@ export default async function ContactPage() {
     ]);
 
   const hours = parseOpeningHours(hoursSetting.value);
-  const hasDetails =
-    !phone.isUnset || !whatsapp.isUnset || !email.isUnset || hours.length > 0;
 
   return (
     <>
@@ -44,9 +44,18 @@ export default async function ContactPage() {
           lede="Leave your details and the atelier team will call you, or reach us directly."
         />
 
-        {hasDetails ? (
-          <dl className="mt-12">
-            {!phone.isUnset ? (
+        <dl className="mt-12">
+          <DetailRow label="Address">
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link-underline"
+            >
+              {SITE.address}
+            </a>
+          </DetailRow>
+          {!phone.isUnset ? (
               <DetailRow label="Phone">
                 <a href={telLink(phone.value) ?? "#"} className="link-underline">
                   {formatPhone(phone.value)}
@@ -83,9 +92,15 @@ export default async function ContactPage() {
                 </div>
               </DetailRow>
             ) : null}
-          </dl>
-        ) : null}
+        </dl>
 
+        <div className="mt-12">
+          <p className="eyebrow">Follow</p>
+          <SocialLinks
+            className="-ml-2 mt-3"
+            linkClassName="text-graphite hover:text-ink"
+          />
+        </div>
       </Container>
 
       <LeadSection
