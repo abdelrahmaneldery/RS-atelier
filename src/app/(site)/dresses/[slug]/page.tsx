@@ -9,12 +9,13 @@ import {
   HORIZON_DAYS,
 } from "@/lib/domain/constants";
 import { JsonLd, productJsonLd } from "@/lib/seo";
-import { getSelectedBranch } from "@/lib/branch-selection";
 import { getSetting, SETTING_KEYS } from "@/lib/settings";
-import { CrossBranchNotice } from "@/components/branch/cross-branch-notice";
+import { SITE } from "@/config/site";
 import { Container } from "@/components/ui/primitives";
 import { ProductGallery } from "@/components/catalogue/product-gallery";
 import { AvailabilityCalendar } from "@/components/catalogue/availability-calendar";
+import { WhatsappDress } from "@/components/catalogue/whatsapp-dress";
+import { designFreeDates } from "../actions";
 import { LeadForm } from "@/components/booking/lead-form";
 import { LeadSection } from "@/components/booking/lead-section";
 import { ViewRecorder } from "@/components/shop/view-recorder";
@@ -54,15 +55,10 @@ export default async function DressPage({ params }: PageProps) {
     throw error;
   }
 
-  const [availability, selectedBranch, whatsapp] = await Promise.all([
-    api.productAvailability(slug),
-    getSelectedBranch(),
+  const [freeDates, whatsapp] = await Promise.all([
+    designFreeDates(product.slug, product.code, product.branch.slug),
     getSetting(SETTING_KEYS.contactWhatsapp),
   ]);
-
-  // Never silently mix branches: a gown from elsewhere is shown, but flagged.
-  const isCrossBranch =
-    selectedBranch !== null && selectedBranch.slug !== product.branch.slug;
 
   const title = `${product.colour ?? ""} ${product.silhouette ?? "Gown"}`.trim();
 
@@ -71,12 +67,12 @@ export default async function DressPage({ params }: PageProps) {
     { label: "Colour", value: product.colour },
     { label: "Silhouette", value: product.silhouette },
     { label: "Collection", value: product.collection?.name ?? null },
-    { label: "Branch", value: product.branch.name },
   ];
 
   return (
     <>
       <ViewRecorder slug={product.slug} />
+      <WhatsappDress name={title} />
 
       <JsonLd
         data={productJsonLd({
@@ -91,29 +87,11 @@ export default async function DressPage({ params }: PageProps) {
       />
 
       <Container className="py-8 lg:py-12">
-        {isCrossBranch && selectedBranch ? (
-          <CrossBranchNotice
-            productBranchName={product.branch.name}
-            productBranchSlug={product.branch.slug}
-            selectedBranchName={selectedBranch.name}
-            selectedBranchSlug={selectedBranch.slug}
-          />
-        ) : null}
-
         <nav aria-label="Breadcrumb" className="mb-8">
           <ol className="flex flex-wrap items-center gap-2 text-xs text-stone">
             <li>
-              <Link href="/branches" className="hover:text-ink">
-                Branches
-              </Link>
-            </li>
-            <li aria-hidden="true">/</li>
-            <li>
-              <Link
-                href={`/branches/${product.branch.slug}`}
-                className="hover:text-ink"
-              >
-                {product.branch.name}
+              <Link href="/shop" className="hover:text-ink">
+                Shop
               </Link>
             </li>
             <li aria-hidden="true">/</li>
@@ -123,8 +101,8 @@ export default async function DressPage({ params }: PageProps) {
           </ol>
         </nav>
 
-        <div className="grid gap-10 lg:grid-cols-[3fr_2fr] lg:gap-16">
-          <div>
+        <div className="grid gap-10 lg:grid-cols-[3fr_2fr] lg:items-stretch lg:gap-16">
+          <div className="flex flex-col">
             <ProductGallery
               images={product.images.map((i) => ({
                 id: i.id,
@@ -133,15 +111,8 @@ export default async function DressPage({ params }: PageProps) {
               }))}
               productName={title}
               colour={product.colour}
+              isDemo={product.images.some((i) => i.isDemo)}
             />
-
-            {/* Stand-in photography is labelled, never passed off as the piece. */}
-            {product.images.some((i) => i.isDemo) ? (
-              <p className="mt-3 text-xs leading-relaxed text-mist">
-                Photography shown is representative. Photographs of this
-                individual gown are being prepared.
-              </p>
-            ) : null}
           </div>
 
           <div>
@@ -202,10 +173,12 @@ export default async function DressPage({ params }: PageProps) {
                   alt: product.primaryImage?.altText ?? `${title} occasion gown`,
                 }}
                 productColour={product.colour}
+                productCode={product.code}
+                productBranchSlug={product.branch.slug}
                 branchId={product.branch.id}
-                branchName={product.branch.name}
-                freeDates={availability.dates}
-                similarHref={`/branches/${product.branch.slug}`}
+                branchName={SITE.shortName}
+                freeDates={freeDates}
+                similarHref="/shop"
                 whatsappNumber={whatsapp.isUnset ? null : whatsapp.value}
               />
             </section>
@@ -213,11 +186,11 @@ export default async function DressPage({ params }: PageProps) {
         </div>
       </Container>
 
-      {/* Enquiry — the only way to progress; reserving is done with the branch. */}
+      {/* Enquiry — the only way to progress; reserving is done with the store. */}
       <LeadSection
         id="request-a-call"
         title="Prefer to speak to someone?"
-        description={`Leave your details and the ${product.branch.name} team will call you. This does not hold the gown.`}
+        description={`Leave your details and the ${SITE.shortName} team will call you. This does not hold the gown.`}
       >
         <LeadForm
           branchId={product.branch.id}

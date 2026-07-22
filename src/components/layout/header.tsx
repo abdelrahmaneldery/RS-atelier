@@ -4,32 +4,29 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Menu, ShoppingBag, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 import { drawerRight, overlayFade } from "@/lib/motion";
 import { cn } from "@/lib/cn";
-import { PRIMARY_NAV, UTILITY_NAV, type NavLink } from "@/config/site";
-import type { ApiBranch } from "@/lib/api/contract";
-import { BranchSwitcher } from "@/components/branch/branch-switcher";
+import type { NavLink } from "@/config/site";
 import { Logo } from "./logo";
 
 /**
- * Site header. No cart icon — this platform has no cart and no checkout of
- * many items. The one commitment offered anywhere is to reserve a single gown.
+ * Site header for the single RS Atelier store.
  *
  * On the homepage the header floats transparently over the full-bleed hero and
  * renders in white; once scrolled past the hero it transitions to a solid
  * off-white bar with dark type. Everywhere else it is solid from the start.
  */
-export function Header({
-  announcement,
-  branches,
-  selectedBranch,
-}: {
-  announcement: string;
-  branches: ApiBranch[];
-  selectedBranch: ApiBranch | null;
-}) {
+
+const NAV: NavLink[] = [
+  { label: "Dresses", href: "/shop" },
+  { label: "Our Story", href: "/our-story" },
+  { label: "Contact Us", href: "/contact" },
+  { label: "Rental Policy", href: "/rental-policy" },
+];
+
+export function Header({ announcement }: { announcement: string }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -67,25 +64,6 @@ export function Header({
    * mobile drawer is open, which needs a legible bar behind it.
    */
   const overHero = isHome && !scrolled && !menuOpen;
-
-  // /branches/<slug>/... pages belong to a specific branch. Switching away from
-  // that branch means the current page no longer applies.
-  const pageBranchSlug = pathname.startsWith("/branches/")
-    ? pathname.split("/")[2]
-    : undefined;
-
-  // Once a branch is selected the nav becomes an ecommerce menu scoped to it;
-  // until then it points at the branch picker and the brand pages.
-  const nav: NavLink[] = selectedBranch
-    ? [
-        { label: "Shop", href: "/shop" },
-        { label: "Our Story", href: "/our-story" },
-        { label: "Contact Us", href: "/contact" },
-        { label: "Rental Policy", href: "/rental-policy" },
-      ]
-    : PRIMARY_NAV;
-
-  const utilities: NavLink[] = selectedBranch ? [] : UTILITY_NAV;
 
   return (
     <>
@@ -131,14 +109,14 @@ export function Header({
           </button>
         </div>
 
-        {/* Desktop header (lg+): unchanged. */}
+        {/* Desktop header (lg+). */}
         <div className="mx-auto hidden h-full w-full max-w-[1400px] grid-cols-[1fr_auto_1fr] items-center gap-6 px-5 sm:px-8 lg:grid lg:px-12">
           <div className="justify-self-start">
             <Logo onDark={overHero} />
           </div>
 
           <nav aria-label="Primary" className="hidden items-center gap-6 justify-self-center lg:flex">
-            {nav.map((link) => {
+            {NAV.map((link) => {
               const active = pathname.startsWith(link.href);
               return (
                 <Link
@@ -162,34 +140,8 @@ export function Header({
           </nav>
 
           <div className="flex items-center justify-self-end gap-2 sm:gap-3">
-            {selectedBranch ? (
-              <BranchSwitcher
-                branches={branches}
-                selected={selectedBranch}
-                onDark={overHero}
-                pageBranchSlug={pageBranchSlug}
-              />
-            ) : null}
-
-            {utilities.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                aria-label={link.label}
-                title={link.label}
-                className={cn(
-                  "hidden h-11 w-11 items-center justify-center transition-colors duration-300 md:inline-flex",
-                  overHero
-                    ? "text-white/85 hover:text-white"
-                    : "text-graphite hover:text-ink",
-                )}
-              >
-                <ShoppingBag aria-hidden="true" className="h-6 w-6" strokeWidth={1.5} />
-              </Link>
-            ))}
-
             <Link
-              href={selectedBranch ? "/shop" : "/branches"}
+              href="/shop"
               className={cn(
                 "hidden min-h-11 items-center border px-5 py-2.5 font-sans text-[0.6875rem] font-medium uppercase tracking-[0.14em] transition-colors duration-300 sm:inline-flex",
                 overHero
@@ -197,7 +149,7 @@ export function Header({
                   : "border-ink bg-ink text-ivory hover:bg-charcoal",
               )}
             >
-              {selectedBranch ? "Shop Now" : "Find Your Gown"}
+              Shop Now
             </Link>
 
             <button
@@ -218,27 +170,14 @@ export function Header({
 
       <AnimatePresence>
         {menuOpen ? (
-          <MobileDrawer
-            key="mobile-drawer"
-            onClose={() => setMenuOpen(false)}
-            nav={nav}
-            utilities={utilities}
-          />
+          <MobileDrawer key="mobile-drawer" onClose={() => setMenuOpen(false)} nav={NAV} />
         ) : null}
       </AnimatePresence>
     </>
   );
 }
 
-function MobileDrawer({
-  onClose,
-  nav,
-  utilities,
-}: {
-  onClose: () => void;
-  nav: NavLink[];
-  utilities: NavLink[];
-}) {
+function MobileDrawer({ onClose, nav }: { onClose: () => void; nav: NavLink[] }) {
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -297,25 +236,12 @@ function MobileDrawer({
           ))}
         </nav>
 
-        <div className="flex flex-col gap-1 px-5 pb-4">
-          {utilities.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className="flex items-center gap-2 py-3 font-sans text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-graphite"
-            >
-              <ShoppingBag aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
-              {link.label}
-            </Link>
-          ))}
-        </div>
-
         <div className="mt-auto border-t border-line p-5">
           <Link
-            href="/branches"
+            href="/shop"
             className="flex min-h-12 w-full items-center justify-center border border-ink bg-ink px-6 py-3 font-sans text-xs font-medium uppercase tracking-[0.14em] text-ivory"
           >
-            Find Your Gown
+            Shop Now
           </Link>
         </div>
       </motion.div>

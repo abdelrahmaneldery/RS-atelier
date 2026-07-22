@@ -16,7 +16,7 @@ export function MobileCta() {
     // The homepage hero already carries this exact call to action, and the
     // sticky bar sat directly beneath it showing the same label twice.
     pathname === "/" ||
-    pathname === "/branches" ||
+    pathname === "/shop" ||
     pathname.startsWith("/book") ||
     pathname.startsWith("/booking");
 
@@ -25,10 +25,10 @@ export function MobileCta() {
   return (
     <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ivory/97 px-4 py-3 backdrop-blur-sm sm:hidden">
       <Link
-        href="/branches"
+        href="/shop"
         className="flex min-h-12 w-full items-center justify-center border border-ink bg-ink px-6 py-3 font-sans text-xs font-medium uppercase tracking-[0.14em] text-ivory"
       >
-        Find Your Gown
+        Shop the Collection
       </Link>
     </div>
   );

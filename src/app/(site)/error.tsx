@@ -31,15 +31,15 @@ export default function SiteError({
       </h1>
       <p className="mx-auto mt-6 max-w-[48ch] leading-relaxed text-graphite">
         This is on our side, not yours. Please try again — and if it keeps
-        happening, the branch team can help you directly.
+        happening, the store team can help you directly.
       </p>
 
       <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
         <Button type="button" onClick={reset}>
           Try Again
         </Button>
-        <ButtonLink href="/branches" variant="secondary">
-          Browse the Wardrobe
+        <ButtonLink href="/shop" variant="secondary">
+          Browse the Collection
         </ButtonLink>
         <ButtonLink href="/contact" variant="ghost">
           Contact Us

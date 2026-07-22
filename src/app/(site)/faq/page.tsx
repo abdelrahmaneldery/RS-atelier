@@ -28,17 +28,17 @@ export default async function FaqPage() {
     {
       question: "Can I reserve a dress online?",
       answer:
-        "No. The website is for browsing and checking availability. To arrange a rental, contact the branch team — they confirm the date and take you through everything in branch.",
+        "No. The website is for browsing and checking availability. To arrange a rental, contact the store team — they confirm the date and take you through everything in store.",
     },
     {
       question: "How do I check if a dress is free for my date?",
       answer:
-        "Open the dress, choose your event date and press Check Availability. Availability is shown for guidance only and is confirmed by the branch team.",
+        "Open the dress, choose your event date and press Check Availability. Availability is shown for guidance only and is confirmed by the store team.",
     },
     {
       question: "Do I pay anything through the website?",
       answer:
-        "No. There are no online payments. Any deposit, balance and refundable insurance are arranged with the branch when you collect the gown.",
+        "No. There are no online payments. Any deposit, balance and refundable insurance are arranged with the store when you collect the gown.",
     },
     {
       question: "Can two people rent the same dress?",
@@ -47,7 +47,7 @@ export default async function FaqPage() {
     },
     {
       question: "How far ahead can I check availability?",
-      answer: `Up to ${HORIZON_DAYS} days before your event. For anything further ahead, contact the branch directly.`,
+      answer: `Up to ${HORIZON_DAYS} days before your event. For anything further ahead, contact the store directly.`,
     },
     {
       question: "When do I collect and return the dress?",
@@ -65,7 +65,7 @@ export default async function FaqPage() {
     {
       question: "A date I saw is no longer available. Why?",
       answer:
-        "Availability shown while browsing is guidance only, not a hold. The branch team confirms final availability when you arrange your rental.",
+        "Availability shown while browsing is guidance only, not a hold. The store team confirms final availability when you arrange your rental.",
     },
   ];
 
@@ -104,12 +104,12 @@ export default async function FaqPage() {
         <p className="mt-8 text-xs leading-relaxed text-mist">
           These answers describe how renting from RS Atelier works. For questions
           about a specific gown, prices, or anything not covered here, please
-          contact the branch.
+          contact the store.
         </p>
       ) : null}
 
       <div className="mt-12 flex flex-col gap-3 sm:flex-row">
-        <ButtonLink href="/branches">Browse the Wardrobe</ButtonLink>
+        <ButtonLink href="/shop">Browse the Collection</ButtonLink>
         <ButtonLink href="/contact" variant="secondary">
           Ask a Question
         </ButtonLink>

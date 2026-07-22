@@ -30,7 +30,7 @@ export default async function OurStoryPage() {
         <SectionHeading
           headingLevel="h1"
           title="Our Story"
-          lede={`${SITE.name} is an Egyptian atelier renting occasion wear from its own branches.`}
+          lede={`${SITE.name} is an Egyptian atelier renting one-of-one occasion wear from its Cairo store.`}
           className="mt-5"
         />
 

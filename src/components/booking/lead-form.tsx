@@ -36,8 +36,8 @@ export function LeadForm({
       >
         <p className="font-display text-xl text-ink">Thank you — we have your details.</p>
         <p className="mt-2 text-sm leading-relaxed text-graphite">
-          The branch team will call you shortly. Please note this does not hold
-          a gown; the branch confirms availability with you directly.
+          The store team will call you shortly. Please note this does not hold
+          a gown; the store confirms availability with you directly.
         </p>
       </div>
     );

@@ -304,21 +304,12 @@ const DRESSES: SeedDress[] = [
 ];
 
 /**
- * Stand-in photography, downloaded to public/media/dresses.
- *
- * These are NOT photographs of the atelier's garments. Every record is written
- * with `isDemo: true` so the interface can label it, and so a query can find
- * every image still needing replacement:
- *
- *   SELECT * FROM ProductImage WHERE isDemo = 1;
- *
- * Source: Pexels (free to use, no attribution required).
+ * Dress photography in public/media/dresses. Full filenames so the extension is
+ * not assumed. Replace the files (or this list) to change the catalogue imagery.
  */
 const DEMO_PHOTOS = [
-  "36707016", "18457620", "28115171", "1655841", "6234213",
-  "13252124", "31604282", "32335610", "32328387", "6235477",
-  "36747258", "15752106", "12163542", "38507962", "17244526",
-  "24194328", "17559253", "29248624", "35140329", "6639599",
+  "1.png", "2.png", "3.png", "4.png", "5.png",
+  "6.png", "7.png", "8.png", "9.png", "10.png",
 ];
 
 function demoPhotosFor(index: number): string[] {
@@ -326,7 +317,7 @@ function demoPhotosFor(index: number): string[] {
   const a = DEMO_PHOTOS[index % DEMO_PHOTOS.length];
   const b = DEMO_PHOTOS[(index * 7 + 3) % DEMO_PHOTOS.length];
   const unique = a === b ? [a] : [a, b];
-  return unique.map((id) => `/media/dresses/${id}.jpg`);
+  return unique.map((file) => `/media/dresses/${file}`);
 }
 
 function slugify(value: string): string {

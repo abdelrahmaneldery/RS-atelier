@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { SlidersHorizontal, X, Search, Check } from "lucide-react";
+import { SlidersHorizontal, X, Search } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 import { tintForColour } from "@/config/media";
-import { SORT_OPTIONS } from "@/config/site";
+import { SITE, SORT_OPTIONS } from "@/config/site";
 import { HORIZON_DAYS, HEALTH_BAND_LABELS } from "@/lib/domain/constants";
 import { addDays, toDateKey } from "@/lib/domain/dates";
-import type { ApiProductCard, ApiCollection } from "@/lib/api/contract";
+import type { ApiProductCard } from "@/lib/api/contract";
 import { Container, EmptyState } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
 import { DragScroll } from "@/components/ui/drag-scroll";
@@ -55,16 +55,13 @@ function titleCase(s: string): string {
 export function ShopClient({
   branch,
   products,
-  collections,
 }: {
   branch: Branch;
   products: ApiProductCard[];
-  collections: ApiCollection[];
 }) {
   // Applied filters — these drive the product grid.
   const [category, setCategory] = useState("All Dresses");
   const [colour, setColour] = useState("");
-  const [collectionSlug, setCollectionSlug] = useState("");
   const [date, setDate] = useState("");
   const [availOnly, setAvailOnly] = useState(true);
   const [availIds, setAvailIds] = useState<Set<string> | null>(null);
@@ -80,7 +77,6 @@ export function ShopClient({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [draftCategory, setDraftCategory] = useState(category);
   const [draftColour, setDraftColour] = useState(colour);
-  const [draftCollection, setDraftCollection] = useState(collectionSlug);
   const [draftDate, setDraftDate] = useState(date);
   const [draftAvailOnly, setDraftAvailOnly] = useState(availOnly);
 
@@ -122,7 +118,6 @@ export function ShopClient({
     // reopens showing what is in effect.
     setDraftCategory(category);
     setDraftColour(colour);
-    setDraftCollection(collectionSlug);
     setDraftDate(date);
     setDraftAvailOnly(availOnly);
     setDrawerOpen(true);
@@ -131,7 +126,6 @@ export function ShopClient({
   function applyFilters() {
     setCategory(draftCategory);
     setColour(draftColour);
-    setCollectionSlug(draftCollection);
     setAvailOnly(draftAvailOnly);
     // Only hit the availability endpoint when the date actually changed.
     if (draftDate !== date) {
@@ -145,7 +139,6 @@ export function ShopClient({
   function clearDraftFilters() {
     setDraftCategory("All Dresses");
     setDraftColour("");
-    setDraftCollection("");
     setDraftDate("");
     setDraftAvailOnly(true);
   }
@@ -154,7 +147,6 @@ export function ShopClient({
   function resetFilters() {
     setCategory("All Dresses");
     setColour("");
-    setCollectionSlug("");
     setDate("");
     setAvailOnly(true);
     setAvailIds(null);
@@ -172,9 +164,6 @@ export function ShopClient({
     }
     if (colour) {
       list = list.filter((p) => (p.colour ?? "").toLowerCase() === colour.toLowerCase());
-    }
-    if (collectionSlug) {
-      list = list.filter((p) => p.collection?.slug === collectionSlug);
     }
     const q = search.trim().toLowerCase();
     if (q) {
@@ -195,13 +184,12 @@ export function ShopClient({
       );
     }
     return sorted;
-  }, [products, category, colour, collectionSlug, search, date, availOnly, availIds, sort]);
+  }, [products, category, colour, search, date, availOnly, availIds, sort]);
 
   // Active *filter* count (drawer filters only — search and sort are separate).
   const activeCount = [
     category !== "All Dresses",
     colour !== "",
-    collectionSlug !== "",
     date !== "",
   ].filter(Boolean).length;
 
@@ -223,7 +211,7 @@ export function ShopClient({
           Shop the Collection
         </h1>
         <p className="mt-4 text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-graphite">
-          {branch.name}
+          {SITE.shortName}
         </p>
       </Container>
 
@@ -355,7 +343,7 @@ export function ShopClient({
         ) : (
           <EmptyState
             title="No gowns match those filters"
-            body="Try a different occasion, colour or date — or clear the filters to see the full wardrobe at this branch."
+            body="Try a different occasion, colour or date — or clear the filters to see the full collection."
             action={
               <Button
                 type="button"
@@ -411,36 +399,6 @@ export function ShopClient({
             </Select>
           </FilterField>
 
-          <FilterField label="Collection" htmlFor="f-collection">
-            <Select
-              id="f-collection"
-              value={draftCollection}
-              onChange={(e) => setDraftCollection(e.currentTarget.value)}
-            >
-              <option value="">All collections</option>
-              {collections.map((c) => (
-                <option key={c.id} value={c.slug}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-          </FilterField>
-
-          <FilterField
-            label="Availability"
-            htmlFor="f-availability"
-            hint={draftDate ? undefined : "Pick an event date first"}
-          >
-            <Select
-              id="f-availability"
-              value={draftAvailOnly ? "available" : "all"}
-              onChange={(e) => setDraftAvailOnly(e.currentTarget.value === "available")}
-              disabled={!draftDate}
-            >
-              <option value="available">Available for my date</option>
-              <option value="all">Show all gowns</option>
-            </Select>
-          </FilterField>
         </FilterDrawer>
       ) : null}
     </>
@@ -462,11 +420,11 @@ function ColourSwatches({
   onChange: (next: string) => void;
 }) {
   if (options.length === 0) {
-    return <p className="text-xs text-mist">No colours to filter at this branch.</p>;
+    return <p className="text-xs text-mist">No colours to filter.</p>;
   }
 
   return (
-    <ul className="grid grid-cols-4 gap-x-3 gap-y-4">
+    <ul className="grid grid-cols-3 gap-x-3 gap-y-2.5">
       {options.map((c) => {
         const selected = value === c;
         return (
@@ -476,27 +434,22 @@ function ColourSwatches({
               onClick={() => onChange(selected ? "" : c)}
               aria-pressed={selected}
               aria-label={titleCase(c)}
-              className="group flex w-full flex-col items-center gap-2 focus:outline-none"
+              className="group flex w-full items-center gap-2.5 py-1 text-left focus:outline-none"
             >
               <span
+                aria-hidden="true"
                 className={cn(
-                  "relative aspect-square w-full transition-[border-color,box-shadow] duration-200",
-                  "group-focus-visible:ring-2 group-focus-visible:ring-gold group-focus-visible:ring-offset-2",
+                  "h-[18px] w-[18px] shrink-0 transition-[border-color,box-shadow] duration-200",
+                  "group-focus-visible:ring-2 group-focus-visible:ring-gold group-focus-visible:ring-offset-1",
                   selected
                     ? "border-2 border-ink shadow-subtle"
                     : "border border-line-strong group-hover:border-stone",
                 )}
                 style={{ backgroundColor: tintForColour(c) }}
-              >
-                {selected ? (
-                  <span className="absolute right-1 top-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-ink text-ivory">
-                    <Check aria-hidden="true" className="h-2.5 w-2.5" strokeWidth={3} />
-                  </span>
-                ) : null}
-              </span>
+              />
               <span
                 className={cn(
-                  "text-center text-[0.6875rem] leading-tight",
+                  "truncate text-[0.6875rem] leading-tight",
                   selected ? "font-medium text-ink" : "text-stone",
                 )}
               >

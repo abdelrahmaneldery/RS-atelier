@@ -39,7 +39,7 @@ export function PolicyPage({
           {setting.isPlaceholder ? (
             <UnconfirmedNotice className="mt-8">
               This text has not yet been confirmed by the atelier and may change.
-              Please ask the branch team if anything is unclear.
+              Please ask the store team if anything is unclear.
             </UnconfirmedNotice>
           ) : null}
 
@@ -58,12 +58,12 @@ export function PolicyPage({
         <div className="mt-12">
           <EmptyState
             title="This policy has not been published yet"
-            body="The atelier has not published this text. Please ask the branch team when you collect, or get in touch and we will explain it."
+            body="The atelier has not published this text. Please ask the store team when you collect, or get in touch and we will explain it."
             action={
               <div className="flex flex-col gap-3 sm:flex-row">
                 <ButtonLink href="/contact">Contact Us</ButtonLink>
-                <ButtonLink href="/branches" variant="secondary">
-                  Browse the Wardrobe
+                <ButtonLink href="/shop" variant="secondary">
+                  Browse the Collection
                 </ButtonLink>
               </div>
             }

@@ -52,30 +52,30 @@ export default function RentalPolicyPage() {
     <Container size="narrow" className="py-14 lg:py-20">
       <h1 className="text-[2.25rem] leading-tight sm:text-[3rem]">Rental Policy</h1>
       <p className="mt-6 max-w-[60ch] leading-relaxed text-graphite">
-        Every RS Atelier gown is rented for one customer, one event date, and one
-        selected branch.
+        Every RS Atelier gown is rented for one customer, one event date, from
+        the RS Atelier store.
       </p>
 
       <div className="mt-12 space-y-10">
         <Section number="01" title="Reservation">
           <p>A gown is reserved only after the booking has been successfully confirmed.</p>
           <p>Each reservation applies to:</p>
-          <Bullets items={["One customer", "One gown", "One event date", "One selected branch"]} />
+          <Bullets items={["One customer", "One gown", "One event date"]} />
           <p>Availability is checked again when the booking is submitted.</p>
         </Section>
 
         <Section number="02" title="Fitting and Collection">
           <p>
-            The customer must collect the gown from the selected RS Atelier branch
-            on the confirmed collection date.
+            The customer must collect the gown from the RS Atelier store on the
+            confirmed collection date.
           </p>
-          <p>Before leaving the branch, the customer should:</p>
+          <p>Before leaving the store, the customer should:</p>
           <Bullets
             items={[
               "Inspect the gown",
               "Confirm the fit",
               "Review its recorded condition",
-              "Report any visible issue to the branch team",
+              "Report any visible issue to the store team",
             ]}
           />
           <p>Once collected, the customer accepts the gown in its recorded condition.</p>
@@ -83,8 +83,8 @@ export default function RentalPolicyPage() {
 
         <Section number="03" title="Return Period">
           <p>
-            The gown must be returned to the same branch on the confirmed return
-            date.
+            The gown must be returned to the RS Atelier store on the confirmed
+            return date.
           </p>
           <p>
             The return date must be no later than three calendar days after the
@@ -95,7 +95,7 @@ export default function RentalPolicyPage() {
             on 20 July, the gown must be returned by 23 July at the latest.
           </p>
           <p>
-            Any late-return charges or exceptions must be confirmed by the branch
+            Any late-return charges or exceptions must be confirmed by the store
             team.
           </p>
         </Section>
@@ -134,7 +134,7 @@ export default function RentalPolicyPage() {
               "Loss of the gown",
             ]}
           />
-          <p>Any applicable charge will be reviewed manually by the branch team.</p>
+          <p>Any applicable charge will be reviewed manually by the store team.</p>
         </Section>
 
         <Section number="06" title="Identification">
@@ -165,7 +165,7 @@ export default function RentalPolicyPage() {
         <Section number="08" title="Need Assistance?">
           <p>
             For help with collection, returns, gown care, or an existing
-            reservation, contact the selected branch and provide:
+            reservation, contact the store and provide:
           </p>
           <Bullets items={["Booking reference", "Customer phone number", "Gown name or code"]} />
         </Section>
@@ -174,7 +174,7 @@ export default function RentalPolicyPage() {
       {/* Actions */}
       <div className="mt-14 border-t border-line pt-10">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <ButtonLink href="/contact">Contact the Branch</ButtonLink>
+          <ButtonLink href="/contact">Contact the Store</ButtonLink>
           <ButtonLink href="/shop" variant="secondary">
             Browse Dresses
           </ButtonLink>

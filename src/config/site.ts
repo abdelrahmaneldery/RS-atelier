@@ -23,6 +23,58 @@ export const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encode
   SITE.address,
 )}`;
 
+/** Builds a maps link for any address. */
+export function locationMapsUrl(address: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+
+/** The store's physical locations, shown on the Contact page. */
+export const STORE_LOCATIONS = [
+  {
+    label: "El Nozha Branch",
+    phone: "0100 639 1471",
+    phoneHref: "tel:+201006391471",
+    address:
+      "5 Gesr El Suez St., near El Nozha Metro Station, in front of El Nakheel Club Gate, Building 5 (First Floor, next to Etisalat).",
+    offDay: "Monday & Friday off",
+  },
+  {
+    label: "Abbas El-Akkad Branch",
+    phone: "0110 506 9202",
+    phoneHref: "tel:+201105069202",
+    address:
+      "49 Hassanein Heikal St. (parallel to Abbas El Akkad, beside Senyorita).",
+    offDay: "Monday & Friday off",
+  },
+] as const;
+
+/** Embeddable Google map preview for an address. */
+export function mapEmbedUrl(address: string): string {
+  return `https://www.google.com/maps?q=${encodeURIComponent(address)}&z=15&output=embed`;
+}
+
+/**
+ * Maps a backend branch slug to its public branch identity (name + phone).
+ * Every gown design is physically held at each branch as a separate garment, so
+ * availability is checked per branch — this is how the availability modal names
+ * the branch(es) that hold the piece on the chosen date.
+ */
+export const BRANCH_DIRECTORY: Record<
+  string,
+  { name: string; phone: string; phoneHref: string }
+> = {
+  "branch-one": {
+    name: "El Nozha Branch",
+    phone: "0100 639 1471",
+    phoneHref: "tel:+201006391471",
+  },
+  "branch-two": {
+    name: "Abbas El-Akkad Branch",
+    phone: "0110 506 9202",
+    phoneHref: "tel:+201105069202",
+  },
+};
+
 /**
  * Public social profiles. `icon` maps to a lucide icon in the SocialLinks
  * component; each opens in a new tab.
@@ -46,12 +98,11 @@ export type NavLink = {
 };
 
 /**
- * Primary navigation. The journey is branch-first, so "Branches" is the entry
- * point to the catalogue rather than a footnote. No cart — this platform has
- * no cart, no shipping and no multi-dress checkout.
+ * Primary navigation for the single store. No cart — this platform has no cart,
+ * no shipping and no multi-dress checkout.
  */
 export const PRIMARY_NAV: NavLink[] = [
-  { label: "Branches", href: "/branches" },
+  { label: "Shop", href: "/shop" },
   { label: "Our Story", href: "/our-story" },
   { label: "Contact", href: "/contact" },
 ];
@@ -63,7 +114,7 @@ export const FOOTER_NAV: Array<{ heading: string; links: NavLink[] }> = [
   {
     heading: "Explore",
     links: [
-      { label: "Branches", href: "/branches" },
+      { label: "Shop", href: "/shop" },
       { label: "Our Story", href: "/our-story" },
     ],
   },
@@ -91,8 +142,8 @@ export const FOOTER_NAV: Array<{ heading: string; links: NavLink[] }> = [
 export const HOW_IT_WORKS_STEPS = [
   {
     number: "01",
-    title: "Choose Your Branch",
-    body: "Each dress belongs to one branch. Start by choosing where you would like to collect from.",
+    title: "Find Your Piece",
+    body: "Browse the collection and choose the gown you would like to wear.",
     owner: "online" as const,
   },
   {
@@ -103,14 +154,14 @@ export const HOW_IT_WORKS_STEPS = [
   },
   {
     number: "03",
-    title: "Contact the Branch",
-    body: "Once your date is free, contact the branch to reserve your gown. Nothing is paid, held or confirmed online.",
+    title: "Contact the Store",
+    body: "Once your date is free, contact the store to reserve your gown. Nothing is paid, held or confirmed online.",
     owner: "branch" as const,
   },
   {
     number: "04",
     title: "Collect the Day Before",
-    body: "Come to the branch the day before your event. The balance and the insurance are settled there.",
+    body: "Come to the store the day before your event. The balance and the insurance are settled there.",
     owner: "branch" as const,
   },
   {
@@ -127,25 +178,25 @@ export const WHY_RS = [
     icon: "one-of-one",
     title: "One of One",
     body: "Every gown is a single piece. When it is yours for the night, it is yours alone.",
-    href: "/branches",
+    href: "/shop",
   },
   {
     icon: "reserve",
     title: "Check Availability",
-    body: "See the real available dates for each gown, then contact the branch team to continue.",
-    href: "/branches",
+    body: "See the real available dates for each gown, then contact the store team to continue.",
+    href: "/shop",
   },
   {
     icon: "condition",
     title: "Honest Condition",
     body: "Each dress carries its condition openly, so you know exactly what you are collecting.",
-    href: "/branches",
+    href: "/shop",
   },
   {
     icon: "fitting",
     title: "Personal Fitting",
-    body: "Collect in branch, where the team can see the dress on you before you leave.",
-    href: "/branches",
+    body: "Collect in store, where the team can see the dress on you before you leave.",
+    href: "/shop",
   },
   {
     icon: "trusted",

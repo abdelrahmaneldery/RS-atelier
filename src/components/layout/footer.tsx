@@ -1,27 +1,17 @@
 import Link from "next/link";
 
-import { FOOTER_NAV, SITE, mapsUrl } from "@/config/site";
+import { FOOTER_NAV, SITE } from "@/config/site";
 import { Logo } from "@/components/layout/logo";
 import { SocialLinks } from "@/components/layout/social-links";
 import { SETTING_KEYS, getSetting } from "@/lib/settings";
-import { formatPhone, whatsappLink } from "@/lib/phone";
-import { parseOpeningHours } from "@/lib/format";
+import { whatsappLink } from "@/lib/phone";
 
 /**
- * Footer (§16.12).
- *
- * Every contact detail is read from configurable settings. Nothing is
- * hardcoded, and anything not yet configured is simply omitted rather than
- * filled with invented information (§33).
+ * Footer. Contact details live on the Contact page; the footer keeps the brand,
+ * navigation, social profiles and the legal row.
  */
 export async function Footer() {
-  const [phone, whatsapp, email, openingHours] = await Promise.all([
-    getSetting(SETTING_KEYS.contactPhone),
-    getSetting(SETTING_KEYS.contactWhatsapp),
-    getSetting(SETTING_KEYS.contactEmail),
-    getSetting(SETTING_KEYS.contactOpeningHours),
-  ]);
-  const hours = parseOpeningHours(openingHours.value);
+  const whatsapp = await getSetting(SETTING_KEYS.contactWhatsapp);
 
   return (
     <footer className="mt-24 border-t border-line-dark bg-ink text-ivory">
@@ -36,6 +26,7 @@ export async function Footer() {
             <SocialLinks
               className="-ml-2 mt-5"
               linkClassName="text-ivory/60 hover:text-ivory"
+              whatsappHref={whatsapp.isUnset ? null : whatsappLink(whatsapp.value)}
             />
           </div>
 
@@ -58,85 +49,6 @@ export async function Footer() {
               </ul>
             </nav>
           ))}
-        </div>
-
-        <div className="mt-14 border-t border-line-dark pt-10">
-          <h2 className="font-sans text-[0.625rem] font-medium uppercase tracking-[0.18em] text-gold-soft">
-            Contact
-          </h2>
-
-          <dl className="mt-5 grid gap-x-8 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <dt className="text-ivory/45">Address</dt>
-                <dd className="mt-1">
-                  <a
-                    href={mapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="link-underline text-ivory/85"
-                  >
-                    {SITE.address}
-                  </a>
-                </dd>
-              </div>
-
-              {!phone.isUnset ? (
-                <div>
-                  <dt className="text-ivory/45">Phone</dt>
-                  <dd className="mt-1">
-                    <a
-                      href={`tel:+${phone.value}`}
-                      className="link-underline text-ivory/85"
-                    >
-                      {formatPhone(phone.value)}
-                    </a>
-                  </dd>
-                </div>
-              ) : null}
-
-              {!whatsapp.isUnset ? (
-                <div>
-                  <dt className="text-ivory/45">WhatsApp</dt>
-                  <dd className="mt-1">
-                    <a
-                      href={whatsappLink(whatsapp.value) ?? "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="link-underline text-ivory/85"
-                    >
-                      {formatPhone(whatsapp.value)}
-                    </a>
-                  </dd>
-                </div>
-              ) : null}
-
-              {!email.isUnset ? (
-                <div>
-                  <dt className="text-ivory/45">Email</dt>
-                  <dd className="mt-1">
-                    <a
-                      href={`mailto:${email.value}`}
-                      className="link-underline text-ivory/85"
-                    >
-                      {email.value}
-                    </a>
-                  </dd>
-                </div>
-              ) : null}
-
-              {hours.length > 0 ? (
-                <div>
-                  <dt className="text-ivory/45">Opening Hours</dt>
-                  <dd className="mt-1 space-y-1 text-ivory/85">
-                    {hours.map((h) => (
-                      <p key={h.label}>
-                        <span className="text-ivory/55">{h.label}</span> {h.value}
-                      </p>
-                    ))}
-                  </dd>
-                </div>
-              ) : null}
-          </dl>
         </div>
 
         <div className="mt-14 flex flex-col gap-4 border-t border-line-dark pt-8 sm:flex-row sm:items-center sm:justify-between">
