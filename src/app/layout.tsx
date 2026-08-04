@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Manrope } from "next/font/google";
+import { Playfair_Display, Manrope, Cairo } from "next/font/google";
 
 import "./globals.css";
 import { SITE } from "@/config/site";
 import { JsonLd, organisationJsonLd, siteUrl } from "@/lib/seo";
+import { dirFor } from "@/lib/i18n/config";
+import { getLocale } from "@/lib/i18n/server";
+import { LocaleProvider } from "@/components/i18n/locale-provider";
 
 /**
  * Two families only (§7): an editorial serif (Playfair Display) for headings
@@ -21,6 +24,14 @@ const playfair = Playfair_Display({
 const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-manrope",
+  display: "swap",
+});
+
+/** Arabic family (Cairo), used across the site when the locale is Arabic (RTL). */
+const cairo = Cairo({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-arabic",
   display: "swap",
 });
 
@@ -44,19 +55,22 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+
   return (
     <html
-      lang="en"
-      className={`${playfair.variable} ${manrope.variable} h-full antialiased`}
+      lang={locale}
+      dir={dirFor(locale)}
+      className={`${playfair.variable} ${manrope.variable} ${cairo.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <JsonLd data={organisationJsonLd()} />
-        {children}
+        <LocaleProvider locale={locale}>{children}</LocaleProvider>
       </body>
     </html>
   );

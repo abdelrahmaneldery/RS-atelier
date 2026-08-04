@@ -9,6 +9,8 @@ import { Menu, X } from "lucide-react";
 import { drawerRight, overlayFade } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 import type { NavLink } from "@/config/site";
+import { useLocale, useT } from "@/components/i18n/locale-provider";
+import { LanguageToggle } from "@/components/i18n/language-toggle";
 import { Logo } from "./logo";
 
 /**
@@ -19,19 +21,22 @@ import { Logo } from "./logo";
  * off-white bar with dark type. Everywhere else it is solid from the start.
  */
 
-const NAV: NavLink[] = [
-  { label: "Dresses", href: "/shop" },
-  { label: "Our Story", href: "/our-story" },
-  { label: "Contact Us", href: "/contact" },
-  { label: "Rental Policy", href: "/rental-policy" },
-];
+const NAV_ITEMS = [
+  { key: "nav.dresses", href: "/shop" },
+  { key: "nav.ourStory", href: "/our-story" },
+  { key: "nav.contact", href: "/contact" },
+  { key: "nav.rentalPolicy", href: "/rental-policy" },
+] as const;
 
 export function Header({ announcement }: { announcement: string }) {
   const pathname = usePathname();
+  const t = useT();
+  const isArabic = useLocale() === "ar";
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isHome = pathname === "/";
+  const nav: NavLink[] = NAV_ITEMS.map((item) => ({ label: t(item.key), href: item.href }));
 
   useEffect(() => {
     function onScroll() {
@@ -71,7 +76,7 @@ export function Header({ announcement }: { announcement: string }) {
         href="#main"
         className="sr-only-focusable absolute left-4 top-4 z-[60] bg-ink px-4 py-2 text-xs uppercase tracking-[0.14em] text-ivory"
       >
-        Skip to content
+        {t("common.skipToContent")}
       </a>
 
       {announcement ? (
@@ -92,21 +97,24 @@ export function Header({ announcement }: { announcement: string }) {
             : "border-line bg-offwhite/95 shadow-subtle backdrop-blur-sm",
         )}
       >
-        {/* Mobile / tablet header: one clean row — logo · menu (< lg). */}
+        {/* Mobile / tablet header: one clean row — logo · [lang · menu] (< lg). */}
         <div className="flex h-full items-center justify-between gap-2 px-4 lg:hidden">
           <Logo onDark={overHero} className="shrink-0" />
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open menu"
-            aria-expanded={menuOpen}
-            className={cn(
-              "-mr-3 flex h-11 w-11 shrink-0 items-center justify-center transition-colors duration-300",
-              overHero ? "text-white hover:text-white/80" : "text-graphite hover:text-ink",
-            )}
-          >
-            <Menu aria-hidden="true" className="h-5 w-5" strokeWidth={1.5} />
-          </button>
+          <div className="flex items-center gap-1">
+            <LanguageToggle onDark={overHero} />
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              aria-label={t("common.openMenu")}
+              aria-expanded={menuOpen}
+              className={cn(
+                "-mr-3 flex h-11 w-11 shrink-0 items-center justify-center transition-colors duration-300",
+                overHero ? "text-white hover:text-white/80" : "text-graphite hover:text-ink",
+              )}
+            >
+              <Menu aria-hidden="true" className="h-5 w-5" strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
 
         {/* Desktop header (lg+). */}
@@ -116,15 +124,16 @@ export function Header({ announcement }: { announcement: string }) {
           </div>
 
           <nav aria-label="Primary" className="hidden items-center gap-6 justify-self-center lg:flex">
-            {NAV.map((link) => {
+            {nav.map((link) => {
               const active = pathname.startsWith(link.href);
               return (
                 <Link
-                  key={link.label}
+                  key={link.href}
                   href={link.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "link-underline font-sans text-[0.8125rem] font-medium uppercase tracking-[0.14em]",
+                    "link-underline font-sans font-medium uppercase tracking-[0.14em]",
+                    isArabic ? "text-[0.9375rem]" : "text-[0.8125rem]",
                     "transition-colors duration-300",
                     overHero
                       ? "text-white/85 hover:text-white"
@@ -140,37 +149,28 @@ export function Header({ announcement }: { announcement: string }) {
           </nav>
 
           <div className="flex items-center justify-self-end gap-2 sm:gap-3">
+            <LanguageToggle onDark={overHero} />
             <Link
               href="/shop"
               className={cn(
-                "hidden min-h-11 items-center border px-5 py-2.5 font-sans text-[0.6875rem] font-medium uppercase tracking-[0.14em] transition-colors duration-300 sm:inline-flex",
+                "hidden items-center border font-sans font-medium uppercase tracking-[0.14em] transition-colors duration-300 sm:inline-flex",
+                isArabic
+                  ? "min-h-12 px-7 py-3 text-[0.8125rem]"
+                  : "min-h-11 px-5 py-2.5 text-[0.6875rem]",
                 overHero
                   ? "border-white/60 text-white hover:border-white hover:bg-white hover:text-ink"
                   : "border-ink bg-ink text-ivory hover:bg-charcoal",
               )}
             >
-              Shop Now
+              {t("cta.shopNow")}
             </Link>
-
-            <button
-              type="button"
-              onClick={() => setMenuOpen(true)}
-              aria-label="Open menu"
-              aria-expanded={menuOpen}
-              className={cn(
-                "flex h-11 w-11 items-center justify-center transition-colors duration-300 lg:hidden",
-                overHero ? "text-white hover:text-white/80" : "text-graphite hover:text-ink",
-              )}
-            >
-              <Menu aria-hidden="true" className="h-5 w-5" strokeWidth={1.5} />
-            </button>
           </div>
         </div>
       </header>
 
       <AnimatePresence>
         {menuOpen ? (
-          <MobileDrawer key="mobile-drawer" onClose={() => setMenuOpen(false)} nav={NAV} />
+          <MobileDrawer key="mobile-drawer" onClose={() => setMenuOpen(false)} nav={nav} />
         ) : null}
       </AnimatePresence>
     </>
@@ -178,6 +178,7 @@ export function Header({ announcement }: { announcement: string }) {
 }
 
 function MobileDrawer({ onClose, nav }: { onClose: () => void; nav: NavLink[] }) {
+  const t = useT();
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -199,7 +200,7 @@ function MobileDrawer({ onClose, nav }: { onClose: () => void; nav: NavLink[] })
       <motion.button
         variants={overlayFade}
         type="button"
-        aria-label="Close menu"
+        aria-label={t("common.closeMenu")}
         onClick={onClose}
         className="absolute inset-0 h-full w-full cursor-default bg-ink/45"
       />
@@ -209,7 +210,7 @@ function MobileDrawer({ onClose, nav }: { onClose: () => void; nav: NavLink[] })
         tabIndex={-1}
         role="dialog"
         aria-modal="true"
-        aria-label="Menu"
+        aria-label={t("common.menu")}
         className="absolute right-0 top-0 flex h-full w-full max-w-sm flex-col overflow-y-auto bg-ivory shadow-raised focus:outline-none"
       >
         <div className="flex h-[var(--header-h)] items-center justify-between border-b border-line px-5">
@@ -217,7 +218,7 @@ function MobileDrawer({ onClose, nav }: { onClose: () => void; nav: NavLink[] })
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close menu"
+            aria-label={t("common.closeMenu")}
             className="flex h-11 w-11 items-center justify-center text-graphite hover:text-ink"
           >
             <X aria-hidden="true" className="h-5 w-5" strokeWidth={1.5} />
@@ -227,7 +228,7 @@ function MobileDrawer({ onClose, nav }: { onClose: () => void; nav: NavLink[] })
         <nav aria-label="Mobile" className="flex flex-col px-5 py-4">
           {nav.map((link) => (
             <Link
-              key={link.label}
+              key={link.href}
               href={link.href}
               className="border-b border-line py-4 font-display text-2xl text-ink"
             >
@@ -241,7 +242,7 @@ function MobileDrawer({ onClose, nav }: { onClose: () => void; nav: NavLink[] })
             href="/shop"
             className="flex min-h-12 w-full items-center justify-center border border-ink bg-ink px-6 py-3 font-sans text-xs font-medium uppercase tracking-[0.14em] text-ivory"
           >
-            Shop Now
+            {t("cta.shopNow")}
           </Link>
         </div>
       </motion.div>

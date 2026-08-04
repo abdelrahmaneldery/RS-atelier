@@ -9,6 +9,7 @@ import { cn } from "@/lib/cn";
 import { HERO_SLIDES } from "@/config/media";
 import { Container } from "@/components/ui/primitives";
 import { ButtonLink } from "@/components/ui/button";
+import { useT } from "@/components/i18n/locale-provider";
 
 /**
  * Full-screen homepage hero slider.
@@ -38,6 +39,7 @@ function usePrefersReducedMotion(): boolean {
 }
 
 export function HeroSlider({ shopHref }: { shopHref: string }) {
+  const t = useT();
   const slides = HERO_SLIDES;
   const count = slides.length;
 
@@ -159,7 +161,7 @@ export function HeroSlider({ shopHref }: { shopHref: string }) {
           className="max-w-[16ch] text-[2.75rem] leading-[1.05] text-white sm:text-[3.5rem] lg:text-[4.5rem]"
           style={{ textShadow: "0 2px 24px rgb(22 19 15 / 0.5)" }}
         >
-          The New Season, One Piece at a Time.
+          {t("home.heroHeadline")}
         </h1>
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
           <ButtonLink
@@ -167,7 +169,7 @@ export function HeroSlider({ shopHref }: { shopHref: string }) {
             size="lg"
             className="border-white bg-white text-ink hover:border-white/90 hover:bg-white/90"
           >
-            Shop the Collection
+            {t("cta.shopCollection")}
           </ButtonLink>
         </div>
       </Container>

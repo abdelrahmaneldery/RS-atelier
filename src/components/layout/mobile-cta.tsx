@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { useT } from "@/components/i18n/locale-provider";
+
 /**
  * Sticky call to action on mobile.
  *
@@ -11,6 +13,7 @@ import { usePathname } from "next/navigation";
  */
 export function MobileCta() {
   const pathname = usePathname();
+  const t = useT();
 
   const hidden =
     // The homepage hero already carries this exact call to action, and the
@@ -28,7 +31,7 @@ export function MobileCta() {
         href="/shop"
         className="flex min-h-12 w-full items-center justify-center border border-ink bg-ink px-6 py-3 font-sans text-xs font-medium uppercase tracking-[0.14em] text-ivory"
       >
-        Shop the Collection
+        {t("cta.shopCollection")}
       </Link>
     </div>
   );

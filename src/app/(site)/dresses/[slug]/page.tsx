@@ -10,6 +10,7 @@ import {
 } from "@/lib/domain/constants";
 import { JsonLd, productJsonLd } from "@/lib/seo";
 import { getSetting, SETTING_KEYS } from "@/lib/settings";
+import { getT } from "@/lib/i18n/server";
 import { SITE } from "@/config/site";
 import { Container } from "@/components/ui/primitives";
 import { ProductGallery } from "@/components/catalogue/product-gallery";
@@ -55,18 +56,19 @@ export default async function DressPage({ params }: PageProps) {
     throw error;
   }
 
-  const [freeDates, whatsapp] = await Promise.all([
+  const [freeDates, whatsapp, t] = await Promise.all([
     designFreeDates(product.slug, product.code, product.branch.slug),
     getSetting(SETTING_KEYS.contactWhatsapp),
+    getT(),
   ]);
 
   const title = `${product.colour ?? ""} ${product.silhouette ?? "Gown"}`.trim();
 
   const specs: Array<{ label: string; value: string | null }> = [
-    { label: "Fabric", value: product.fabric },
-    { label: "Colour", value: product.colour },
-    { label: "Silhouette", value: product.silhouette },
-    { label: "Collection", value: product.collection?.name ?? null },
+    { label: t("product.fabric"), value: product.fabric },
+    { label: t("product.colour"), value: product.colour },
+    { label: t("product.silhouette"), value: product.silhouette },
+    { label: t("product.collection"), value: product.collection?.name ?? null },
   ];
 
   return (
@@ -91,7 +93,7 @@ export default async function DressPage({ params }: PageProps) {
           <ol className="flex flex-wrap items-center gap-2 text-xs text-stone">
             <li>
               <Link href="/shop" className="hover:text-ink">
-                Shop
+                {t("product.breadcrumbShop")}
               </Link>
             </li>
             <li aria-hidden="true">/</li>
@@ -122,11 +124,11 @@ export default async function DressPage({ params }: PageProps) {
 
             <p className="mt-5 font-display text-2xl text-ink">
               {product.price === null ? (
-                "Price on request"
+                t("product.priceOnRequest")
               ) : (
                 <>
                   {formatMoney(product.price, product.currency)}{" "}
-                  <span className="text-base text-stone">per rental</span>
+                  <span className="text-base text-stone">{t("product.perRental")}</span>
                 </>
               )}
             </p>
@@ -156,12 +158,10 @@ export default async function DressPage({ params }: PageProps) {
             {/* Dress → free dates. */}
             <section className="mt-12 border-t border-line pt-8">
               <h2 className="font-display text-2xl text-ink">
-                Check Your Date
+                {t("product.checkYourDate")}
               </h2>
               <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-stone">
-                This gown is one of a kind, so it can only be worn by one person
-                at a time. Choose your event date within the next {HORIZON_DAYS}{" "}
-                days to check availability.
+                {t("product.checkYourDateBody", { days: HORIZON_DAYS })}
               </p>
 
               <AvailabilityCalendar
@@ -189,8 +189,8 @@ export default async function DressPage({ params }: PageProps) {
       {/* Enquiry — the only way to progress; reserving is done with the store. */}
       <LeadSection
         id="request-a-call"
-        title="Prefer to speak to someone?"
-        description={`Leave your details and the ${SITE.shortName} team will call you. This does not hold the gown.`}
+        title={t("product.preferSpeak")}
+        description={t("product.preferSpeakBody", { store: SITE.shortName })}
       >
         <LeadForm
           branchId={product.branch.id}

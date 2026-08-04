@@ -1,5 +1,6 @@
 import { api } from "@/lib/api/client";
 import { getStore } from "@/lib/store";
+import { getT } from "@/lib/i18n/server";
 import { Container } from "@/components/ui/primitives";
 import { ProductGrid } from "@/components/catalogue/product-card";
 import {
@@ -18,7 +19,7 @@ import { RecentlyViewed } from "@/components/shop/recently-viewed";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const store = await getStore();
+  const [store, t] = await Promise.all([getStore(), getT()]);
   const shopHref = "/shop";
 
   const trending = store ? await api.trending(store.slug, 8).catch(() => []) : [];
@@ -33,7 +34,11 @@ export default async function HomePage() {
       {trending.length > 0 ? (
         <section className="border-t border-line py-10 lg:py-14">
           <Container>
-            <SectionHead title="Trending Now" href="/shop" linkLabel="View All" />
+            <SectionHead
+              title={t("home.trending")}
+              href="/shop"
+              linkLabel={t("cta.viewAll")}
+            />
             <div className="mt-8">
               <ProductGrid products={trending} layout="rail" />
             </div>
@@ -43,7 +48,7 @@ export default async function HomePage() {
 
       {/* Recently viewed — client, localStorage; renders nothing when empty. */}
       <RecentlyViewed
-        title="Recently Viewed"
+        title={t("home.recentlyViewed")}
         className="border-t border-line py-10 lg:py-14"
       />
     </>

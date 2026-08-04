@@ -133,6 +133,34 @@
 }
 
 /* ==========================================================================
+   Arabic / RTL
+   The whole site flips to right-to-left and swaps to an Arabic family. Arabic
+   script is cursive — letters join — so letter-spacing must be neutralised, and
+   there is no letter-casing, so the design's uppercase treatment is dropped.
+   ========================================================================== */
+
+/* Cairo is the ONLY Arabic family. Playfair (font-display) and Manrope
+   (font-sans) carry no Arabic glyphs, so any element still using them falls back
+   to a system Arabic font. Force Cairo on EVERY element in RTL — the display and
+   sans utility classes are overridden here so nothing escapes to a system font. */
+[dir="rtl"],
+[dir="rtl"] * {
+  font-family: var(--font-arabic), sans-serif !important;
+}
+
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4 {
+  letter-spacing: normal;
+}
+
+[dir="rtl"] * {
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+/* ==========================================================================
    Components
    ========================================================================== */
 

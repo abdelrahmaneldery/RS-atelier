@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { SITE, WHY_RS } from "@/config/site";
 import { SETTING_KEYS, getSetting } from "@/lib/settings";
+import { getT } from "@/lib/i18n/server";
 import { toParagraphs } from "@/components/content/policy-page";
 import { ASPECT, EDITORIAL_IMAGES, IMAGE_SIZES } from "@/config/media";
 import { AtelierImage } from "@/components/ui/atelier-image";
@@ -20,17 +21,20 @@ export const metadata: Metadata = {
  * plus whatever the atelier chooses to publish in settings.
  */
 export default async function OurStoryPage() {
-  const story = await getSetting(SETTING_KEYS.storyBody);
+  const [story, t] = await Promise.all([
+    getSetting(SETTING_KEYS.storyBody),
+    getT(),
+  ]);
   const paragraphs = toParagraphs(story.value);
 
   return (
     <>
       <Container size="narrow" className="py-14 lg:py-20">
-        <Eyebrow gold>Established {SITE.establishedYear}</Eyebrow>
+        <Eyebrow gold>{t("story.established", { year: SITE.establishedYear })}</Eyebrow>
         <SectionHeading
           headingLevel="h1"
-          title="Our Story"
-          lede={`${SITE.name} is an Egyptian atelier renting one-of-one occasion wear from its Cairo store.`}
+          title={t("story.title")}
+          lede={t("story.lede", { name: SITE.name })}
           className="mt-5"
         />
 
@@ -45,22 +49,10 @@ export default async function OurStoryPage() {
         ) : (
           <div className="mt-10 space-y-5 text-charcoal">
             <p className="max-w-[68ch] leading-relaxed">
-              RS began in {SITE.establishedYear} with a simple conviction: that
-              the right dress for an important evening should not have to be
-              bought, kept, and worn once.
+              {t("story.para1", { year: SITE.establishedYear })}
             </p>
-            <p className="max-w-[68ch] leading-relaxed">
-              Every piece in the wardrobe is a single garment. Nothing is
-              duplicated, nothing is mass-ordered, and each gown carries its own
-              reference and its own history of wear and repair. When a dress is
-              yours for a night, it is yours alone.
-            </p>
-            <p className="max-w-[68ch] leading-relaxed">
-              That is also why we are honest about condition. Each gown shows
-              its condition band openly, because a piece that has been loved
-              several times is not the same as one that has never left the rail
-              — and you deserve to know which you are collecting.
-            </p>
+            <p className="max-w-[68ch] leading-relaxed">{t("story.para2")}</p>
+            <p className="max-w-[68ch] leading-relaxed">{t("story.para3")}</p>
           </div>
         )}
       </Container>
@@ -78,13 +70,15 @@ export default async function OurStoryPage() {
             />
           </Reveal>
           <Reveal delay={80}>
-            <h2 className="font-display text-3xl text-ink">How we work</h2>
+            <h2 className="font-display text-3xl text-ink">{t("story.howWeWork")}</h2>
             <dl className="mt-8 space-y-6">
               {WHY_RS.map((item) => (
-                <div key={item.title}>
-                  <dt className="font-display text-xl text-ink">{item.title}</dt>
+                <div key={item.icon}>
+                  <dt className="font-display text-xl text-ink">
+                    {t(`whyRs.${item.icon}.title`)}
+                  </dt>
                   <dd className="mt-1.5 max-w-[52ch] text-sm leading-relaxed text-stone">
-                    {item.body}
+                    {t(`whyRs.${item.icon}.body`)}
                   </dd>
                 </div>
               ))}

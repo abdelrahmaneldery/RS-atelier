@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { ApiError, api } from "@/lib/api/client";
 import { getStore } from "@/lib/store";
+import { getT } from "@/lib/i18n/server";
 import { Container, ErrorState } from "@/components/ui/primitives";
 import { ButtonLink } from "@/components/ui/button";
 import { ShopClient } from "@/components/shop/shop-client";
@@ -22,16 +23,16 @@ export const metadata: Metadata = {
  * availability and booking remain server-backed and unchanged.
  */
 export default async function ShopPage() {
-  const store = await getStore();
+  const [store, t] = await Promise.all([getStore(), getT()]);
 
   if (!store) {
     return (
       <Container className="py-20">
         <ErrorState
-          body="We could not load the wardrobe just now. Please try again shortly."
+          body={t("shop.loadError")}
           action={
             <ButtonLink href="/shop" variant="secondary">
-              Try Again
+              {t("cta.tryAgain")}
             </ButtonLink>
           }
         />
@@ -47,10 +48,10 @@ export default async function ShopPage() {
     return (
       <Container className="py-20">
         <ErrorState
-          body="We could not load the wardrobe just now. Please try again shortly."
+          body={t("shop.loadError")}
           action={
             <ButtonLink href="/shop" variant="secondary">
-              Try Again
+              {t("cta.tryAgain")}
             </ButtonLink>
           }
         />

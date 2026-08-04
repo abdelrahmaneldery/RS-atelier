@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 
+import { getT } from "@/lib/i18n/server";
 import { Container } from "@/components/ui/primitives";
 import { ButtonLink } from "@/components/ui/button";
 
@@ -47,142 +48,128 @@ function Bullets({ items }: { items: string[] }) {
   );
 }
 
-export default function RentalPolicyPage() {
+export default async function RentalPolicyPage() {
+  const t = await getT();
+
   return (
     <Container size="narrow" className="py-14 lg:py-20">
-      <h1 className="text-[2.25rem] leading-tight sm:text-[3rem]">Rental Policy</h1>
+      <h1 className="text-[2.25rem] leading-tight sm:text-[3rem]">
+        {t("rentalPolicy.title")}
+      </h1>
       <p className="mt-6 max-w-[60ch] leading-relaxed text-graphite">
-        Every RS Atelier gown is rented for one customer, one event date, from
-        the RS Atelier store.
+        {t("rentalPolicy.intro")}
       </p>
 
       <div className="mt-12 space-y-10">
-        <Section number="01" title="Reservation">
-          <p>A gown is reserved only after the booking has been successfully confirmed.</p>
-          <p>Each reservation applies to:</p>
-          <Bullets items={["One customer", "One gown", "One event date"]} />
-          <p>Availability is checked again when the booking is submitted.</p>
-        </Section>
-
-        <Section number="02" title="Fitting and Collection">
-          <p>
-            The customer must collect the gown from the RS Atelier store on the
-            confirmed collection date.
-          </p>
-          <p>Before leaving the store, the customer should:</p>
+        <Section number="01" title={t("rentalPolicy.reservation")}>
+          <p>{t("rentalPolicy.s01p1")}</p>
+          <p>{t("rentalPolicy.s01p2")}</p>
           <Bullets
             items={[
-              "Inspect the gown",
-              "Confirm the fit",
-              "Review its recorded condition",
-              "Report any visible issue to the store team",
+              t("rentalPolicy.s01b1"),
+              t("rentalPolicy.s01b2"),
+              t("rentalPolicy.s01b3"),
             ]}
           />
-          <p>Once collected, the customer accepts the gown in its recorded condition.</p>
+          <p>{t("rentalPolicy.s01p3")}</p>
         </Section>
 
-        <Section number="03" title="Return Period">
-          <p>
-            The gown must be returned to the RS Atelier store on the confirmed
-            return date.
-          </p>
-          <p>
-            The return date must be no later than three calendar days after the
-            event date.
-          </p>
+        <Section number="02" title={t("rentalPolicy.fittingCollection")}>
+          <p>{t("rentalPolicy.s02p1")}</p>
+          <p>{t("rentalPolicy.s02p2")}</p>
+          <Bullets
+            items={[
+              t("rentalPolicy.s02b1"),
+              t("rentalPolicy.s02b2"),
+              t("rentalPolicy.s02b3"),
+              t("rentalPolicy.s02b4"),
+            ]}
+          />
+          <p>{t("rentalPolicy.s02p3")}</p>
+        </Section>
+
+        <Section number="03" title={t("rentalPolicy.returnPeriod")}>
+          <p>{t("rentalPolicy.s03p1")}</p>
+          <p>{t("rentalPolicy.s03p2")}</p>
           <p className="border-l-2 border-gold/40 bg-sand/40 px-4 py-3 text-sm">
-            <span className="font-medium text-ink">Example:</span> If the event is
-            on 20 July, the gown must be returned by 23 July at the latest.
+            <span className="font-medium text-ink">
+              {t("rentalPolicy.exampleLabel")}
+            </span>{" "}
+            {t("rentalPolicy.s03example")}
           </p>
-          <p>
-            Any late-return charges or exceptions must be confirmed by the store
-            team.
-          </p>
+          <p>{t("rentalPolicy.s03p3")}</p>
         </Section>
 
-        <Section number="04" title="Gown Care">
-          <p>
-            The customer is responsible for keeping the gown safe and in good
-            condition during the rental period.
-          </p>
-          <p>The customer must not:</p>
+        <Section number="04" title={t("rentalPolicy.gownCare")}>
+          <p>{t("rentalPolicy.s04p1")}</p>
+          <p>{t("rentalPolicy.s04p2")}</p>
           <Bullets
             items={[
-              "Wash or dry-clean the gown",
-              "Iron or steam it without permission",
-              "Permanently alter the gown",
-              "Cut, stitch, glue, dye, or modify it",
-              "Give the gown to another person",
+              t("rentalPolicy.s04b1"),
+              t("rentalPolicy.s04b2"),
+              t("rentalPolicy.s04b3"),
+              t("rentalPolicy.s04b4"),
+              t("rentalPolicy.s04b5"),
             ]}
           />
-          <p>Cleaning and maintenance are handled by RS Atelier.</p>
+          <p>{t("rentalPolicy.s04p3")}</p>
         </Section>
 
-        <Section number="05" title="Damage or Loss">
-          <p>The gown will be inspected after it is returned.</p>
-          <p>
-            The customer may be responsible for damage beyond normal wear,
-            including:
-          </p>
+        <Section number="05" title={t("rentalPolicy.damageLoss")}>
+          <p>{t("rentalPolicy.s05p1")}</p>
+          <p>{t("rentalPolicy.s05p2")}</p>
           <Bullets
             items={[
-              "Tears or burns",
-              "Permanent stains",
-              "Missing embellishments",
-              "Unauthorized alterations",
-              "Missing accessories",
-              "Loss of the gown",
+              t("rentalPolicy.s05b1"),
+              t("rentalPolicy.s05b2"),
+              t("rentalPolicy.s05b3"),
+              t("rentalPolicy.s05b4"),
+              t("rentalPolicy.s05b5"),
+              t("rentalPolicy.s05b6"),
             ]}
           />
-          <p>Any applicable charge will be reviewed manually by the store team.</p>
+          <p>{t("rentalPolicy.s05p3")}</p>
         </Section>
 
-        <Section number="06" title="Identification">
-          <p>
-            A valid identification document may be required to confirm the
-            reservation.
-          </p>
-          <p>
-            The identification record remains connected to the booking until the
-            gown has been returned and inspected.
-          </p>
+        <Section number="06" title={t("rentalPolicy.identification")}>
+          <p>{t("rentalPolicy.s06p1")}</p>
+          <p>{t("rentalPolicy.s06p2")}</p>
         </Section>
 
-        <Section number="07" title="Cancellation">
+        <Section number="07" title={t("rentalPolicy.cancellation")}>
           <p>
-            Cancellation and deposit rules are explained in the{" "}
+            {t("rentalPolicy.s07p1a")}
             <Link href="/cancellation-policy" className="link-underline text-ink">
-              Cancellation &amp; Refund Policy
+              {t("rentalPolicy.s07link")}
             </Link>
             .
           </p>
-          <p>
-            A confirmed reservation cannot be cancelled through the website after
-            the gown has been collected.
-          </p>
+          <p>{t("rentalPolicy.s07p2")}</p>
         </Section>
 
-        <Section number="08" title="Need Assistance?">
-          <p>
-            For help with collection, returns, gown care, or an existing
-            reservation, contact the store and provide:
-          </p>
-          <Bullets items={["Booking reference", "Customer phone number", "Gown name or code"]} />
+        <Section number="08" title={t("rentalPolicy.needAssistance")}>
+          <p>{t("rentalPolicy.s08p1")}</p>
+          <Bullets
+            items={[
+              t("rentalPolicy.s08b1"),
+              t("rentalPolicy.s08b2"),
+              t("rentalPolicy.s08b3"),
+            ]}
+          />
         </Section>
       </div>
 
       {/* Actions */}
       <div className="mt-14 border-t border-line pt-10">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <ButtonLink href="/contact">Contact the Store</ButtonLink>
+          <ButtonLink href="/contact">{t("rentalPolicy.contactStore")}</ButtonLink>
           <ButtonLink href="/shop" variant="secondary">
-            Browse Dresses
+            {t("rentalPolicy.browseDresses")}
           </ButtonLink>
         </div>
 
         <p className="mt-8 text-xs leading-relaxed text-mist">
-          Rental terms may be updated by RS Atelier. The terms confirmed with your
-          reservation apply to that booking.
+          {t("rentalPolicy.disclaimer")}
         </p>
       </div>
     </Container>

@@ -17,6 +17,7 @@ import { modalPanel, overlayFade } from "@/lib/motion";
 import { HORIZON_DAYS } from "@/lib/domain/constants";
 import { addDays, toDateKey } from "@/lib/domain/dates";
 import { whatsappLink } from "@/lib/phone";
+import { useT } from "@/components/i18n/locale-provider";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { DatePicker, displayDate } from "@/components/ui/date-picker";
 import { AtelierImage } from "@/components/ui/atelier-image";
@@ -42,9 +43,6 @@ type BranchAvailability = {
  * disabled. When the gown is free the result opens in a premium modal;
  * reserving itself is always arranged with the branch team.
  */
-const GUIDANCE_NOTE =
-  "Availability is shown for guidance only and is confirmed by the store team.";
-
 export function AvailabilityCalendar({
   productSlug,
   productId,
@@ -76,6 +74,7 @@ export function AvailabilityCalendar({
   whatsappNumber?: string | null;
   rentalPolicyHref?: string;
 }) {
+  const t = useT();
   const [available] = useState<Set<string>>(() => new Set(freeDates));
   const [date, setDate] = useState<string | null>(null);
   const [result, setResult] = useState<
@@ -93,14 +92,12 @@ export function AvailabilityCalendar({
     return (
       <div className="mt-6 border border-line bg-offwhite px-5 py-6">
         <p className="text-sm leading-relaxed text-graphite">
-          This gown has no available dates in the next {HORIZON_DAYS} days. It may
-          be reserved, or being prepared between rentals.
+          {t("product.noDatesBody", { days: HORIZON_DAYS })}
         </p>
         <p className="mt-3 text-sm leading-relaxed text-stone">
-          Leave your details below and the store will let you know when it is
-          available again.
+          {t("product.noDatesLeave")}
         </p>
-        <p className="mt-4 text-xs leading-relaxed text-mist">{GUIDANCE_NOTE}</p>
+        <p className="mt-4 text-xs leading-relaxed text-mist">{t("product.guidanceNote")}</p>
       </div>
     );
   }
@@ -133,7 +130,7 @@ export function AvailabilityCalendar({
             htmlFor="check-date"
             className="mb-2 block font-sans text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-graphite"
           >
-            Event Date
+            {t("product.eventDate")}
           </label>
           <DatePicker
             id="check-date"
@@ -145,7 +142,7 @@ export function AvailabilityCalendar({
             availableDates={available}
             min={min}
             max={max}
-            ariaLabel="Event date"
+            ariaLabel={t("product.eventDate")}
           />
         </div>
         <Button
@@ -154,16 +151,16 @@ export function AvailabilityCalendar({
           disabled={!date || pending}
           className="h-14 disabled:opacity-100"
         >
-          {pending ? "Checking…" : "Check Availability"}
+          {pending ? t("product.checking") : t("product.checkAvailability")}
         </Button>
       </form>
 
       {/* Unavailable stays inline; available opens the modal below. */}
       {result && !result.available ? (
         <div className="mt-6 border border-line bg-offwhite px-6 py-6">
-          <h3 className="font-display text-2xl text-ink">Not Available on This Date</h3>
+          <h3 className="font-display text-2xl text-ink">{t("availability.notAvailableTitle")}</h3>
           <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-stone">
-            This gown is not available at either branch on your selected date.
+            {t("availability.notAvailableBody")}
           </p>
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
             <Button
@@ -174,34 +171,31 @@ export function AvailabilityCalendar({
                 setDate(null);
               }}
             >
-              Choose Another Date
+              {t("availability.chooseAnotherDate")}
             </Button>
             <ButtonLink href={similarHref} variant="secondary">
-              View Similar Dresses Available on This Date
+              {t("availability.viewSimilar")}
             </ButtonLink>
           </div>
         </div>
       ) : (
         <p className="mt-5 text-sm text-stone">
-          Choose your event date to check availability.
+          {t("product.chooseDatePrompt")}
         </p>
       )}
 
-      <p className="mt-4 text-xs leading-relaxed text-mist">{GUIDANCE_NOTE}</p>
+      <p className="mt-4 text-xs leading-relaxed text-mist">{t("product.guidanceNote")}</p>
 
       {/* Rental Essentials — compact guidance in the space below the note. */}
       <div className="mt-6 border border-line bg-offwhite p-5">
         <h3 className="font-sans text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-charcoal">
-          Rental Essentials
+          {t("product.essentialsTitle")}
         </h3>
         <ul className="mt-3.5 flex flex-col gap-3">
           {[
-            { icon: Clock, text: "Return the gown within 3 calendar days after the event." },
-            { icon: MapPin, text: "Return it to the same branch." },
-            {
-              icon: Sparkles,
-              text: "Cleaning and alterations are handled only by RS Atelier.",
-            },
+            { icon: Clock, text: t("product.essReturn3") },
+            { icon: MapPin, text: t("product.essSameBranch") },
+            { icon: Sparkles, text: t("product.essCleaning") },
           ].map(({ icon: Icon, text }) => (
             <li key={text} className="flex gap-3 text-sm leading-snug text-graphite">
               <Icon
@@ -217,7 +211,7 @@ export function AvailabilityCalendar({
           href={rentalPolicyHref}
           className="link-underline mt-4 inline-flex items-center gap-1 font-sans text-xs font-medium text-ink"
         >
-          View Full Rental Policy
+          {t("product.viewFullRentalPolicy")}
           <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={1.75} />
         </a>
       </div>
@@ -277,6 +271,7 @@ function AvailabilityModal({
   onClose: () => void;
   onChooseAnother: () => void;
 }) {
+  const t = useT();
   const panelRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<"summary" | "call">("summary");
 
@@ -355,7 +350,7 @@ function AvailabilityModal({
                   <p className="mt-1 text-sm text-graphite">{prettyDate}</p>
                   <p className="mt-1.5 inline-flex items-center gap-1.5 font-sans text-[0.625rem] font-medium uppercase tracking-[0.1em] text-success">
                     <Check aria-hidden="true" className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} />
-                    Available on your date
+                    {t("availability.availableOnYourDate")}
                   </p>
                 </div>
               </div>
@@ -364,7 +359,7 @@ function AvailabilityModal({
               <div className="mt-[clamp(0.75rem,2vh,1rem)] border border-gold/45 bg-gold-soft/15 px-4 py-3.5">
                 <p className="flex items-center gap-1.5 font-sans text-[0.625rem] font-semibold uppercase tracking-[0.18em] text-gold-deep">
                   <Check aria-hidden="true" className="h-3.5 w-3.5 shrink-0" strokeWidth={3} />
-                  Available At
+                  {t("availability.availableAt")}
                 </p>
                 <ul className="mt-2.5 flex flex-wrap gap-2">
                   {branches.map((b) => (
@@ -384,21 +379,20 @@ function AvailabilityModal({
               </div>
 
               <p className="mt-2.5 text-xs leading-relaxed text-mist">
-                Availability is for guidance only. The gown is not held until
-                confirmed by the store.
+                {t("availability.notHeldNotice")}
               </p>
 
               {/* Middle: concise rental summary (a plain divided list, no heavy box) */}
               <div className="mt-[clamp(0.75rem,2vh,1rem)] border-t border-line pt-[clamp(0.75rem,2vh,1rem)]">
                 <h3 className="font-sans text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-charcoal">
-                  Rental &amp; Return
+                  {t("availability.rentalReturn")}
                 </h3>
                 <ul className="mt-2 flex flex-col gap-1">
                   {[
-                    "Collection arranged with the store",
-                    "Return within 3 calendar days after the event",
-                    "Return to the store",
-                    "Cleaning & alterations handled by RS Atelier",
+                    t("availability.rr1"),
+                    t("availability.rr2"),
+                    t("availability.rr3"),
+                    t("availability.rr4"),
                   ].map((item) => (
                     <li key={item} className="flex gap-2 text-[0.8125rem] leading-snug text-graphite">
                       <span
@@ -413,7 +407,7 @@ function AvailabilityModal({
                   href={rentalPolicyHref}
                   className="link-underline mt-2.5 inline-block font-sans text-xs font-medium text-ink"
                 >
-                  View Full Rental Policy
+                  {t("product.viewFullRentalPolicy")}
                 </a>
               </div>
 
@@ -430,7 +424,7 @@ function AvailabilityModal({
                     className="py-2.5"
                   >
                     <MessageCircle aria-hidden="true" className="h-4 w-4" strokeWidth={1.75} />
-                    Send WhatsApp Message
+                    {t("availability.sendWhatsapp")}
                   </ButtonLink>
                 ) : null}
                 <Button
@@ -442,7 +436,7 @@ function AvailabilityModal({
                   onClick={() => setMode("call")}
                 >
                   <Phone aria-hidden="true" className="h-4 w-4" strokeWidth={1.75} />
-                  Call Us
+                  {t("availability.callUs")}
                 </Button>
                 <Button
                   type="button"
@@ -452,7 +446,7 @@ function AvailabilityModal({
                   className="py-2.5"
                   onClick={onChooseAnother}
                 >
-                  Choose Another Date
+                  {t("availability.chooseAnotherDate")}
                 </Button>
               </div>
             </>
@@ -463,15 +457,17 @@ function AvailabilityModal({
                 onClick={() => setMode("summary")}
                 className="link-underline mb-4 font-sans text-xs font-medium uppercase tracking-[0.12em] text-stone hover:text-ink"
               >
-                Back
+                {t("availability.back")}
               </button>
               <h2 className="font-display text-[clamp(1.1rem,3.6vw,1.5rem)] leading-tight text-ink">
-                Call Us
+                {t("availability.callUs")}
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-stone">
-                Leave your details and the {branchName} team will call you to
-                confirm the {productName} for {prettyDate}. This does not hold the
-                gown.
+                {t("availability.requestBody", {
+                  store: branchName,
+                  product: productName,
+                  date: prettyDate,
+                })}
               </p>
               <div className="mt-5">
                 <LeadForm

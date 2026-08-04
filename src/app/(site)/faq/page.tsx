@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { SETTING_KEYS, getSetting, parseFaq } from "@/lib/settings";
+import { getT } from "@/lib/i18n/server";
 import {
   BUFFER_WORKING_DAYS,
   HORIZON_DAYS,
@@ -21,7 +22,10 @@ export const metadata: Metadata = {
  * the system enforces, not marketing copy, so they are safe to state.
  */
 export default async function FaqPage() {
-  const setting = await getSetting(SETTING_KEYS.policyFaq);
+  const [setting, t] = await Promise.all([
+    getSetting(SETTING_KEYS.policyFaq),
+    getT(),
+  ]);
   const published = parseFaq(setting.value);
 
   const derived = [
@@ -76,7 +80,7 @@ export default async function FaqPage() {
       <Eyebrow gold>Help</Eyebrow>
       <SectionHeading
         headingLevel="h1"
-        title="Frequently Asked Questions"
+        title={t("faq.title")}
         className="mt-5"
       />
 

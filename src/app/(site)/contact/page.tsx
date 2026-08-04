@@ -4,6 +4,7 @@ import { Phone, MapPin, Clock } from "lucide-react";
 import { SETTING_KEYS, getSetting } from "@/lib/settings";
 import { whatsappLink } from "@/lib/phone";
 import { STORE_LOCATIONS, locationMapsUrl } from "@/config/site";
+import { getT } from "@/lib/i18n/server";
 import { Container } from "@/components/ui/primitives";
 import { SocialLinks } from "@/components/layout/social-links";
 
@@ -21,15 +22,18 @@ export const dynamic = "force-dynamic";
  * floating WhatsApp button is provided globally by the layout.
  */
 export default async function ContactPage() {
-  const whatsapp = await getSetting(SETTING_KEYS.contactWhatsapp);
+  const [whatsapp, t] = await Promise.all([
+    getSetting(SETTING_KEYS.contactWhatsapp),
+    getT(),
+  ]);
 
   return (
     <Container className="py-14 lg:py-20">
       <h1 className="font-display text-[2.5rem] leading-tight text-ink sm:text-[3rem]">
-        Contact
+        {t("contact.title")}
       </h1>
       <p className="mt-3 max-w-[46ch] text-sm leading-relaxed text-stone sm:text-base">
-        Visit us at one of our branches or get in touch.
+        {t("contact.subtitle")}
       </p>
 
       <div className="mt-10 flex flex-col gap-8 lg:mt-14">
@@ -57,7 +61,7 @@ export default async function ContactPage() {
                   className="inline-flex min-h-11 items-center justify-center gap-2 border border-gold bg-gold px-5 py-2 font-sans text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-white transition-colors duration-200 hover:border-gold-deep hover:bg-gold-deep"
                 >
                   <Phone aria-hidden="true" className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-                  Call Now
+                  {t("contact.callNow")}
                 </a>
               </div>
 
@@ -108,7 +112,7 @@ export default async function ContactPage() {
                 className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 border border-line-strong bg-ivory/90 px-3 py-1.5 font-sans text-[0.625rem] font-medium uppercase tracking-[0.12em] text-ink shadow-subtle backdrop-blur-sm transition-colors hover:border-ink hover:bg-ivory"
               >
                 <MapPin aria-hidden="true" className="h-3 w-3" strokeWidth={2} />
-                Open in Maps
+                {t("contact.openInMaps")}
               </a>
             </div>
           </article>
@@ -116,7 +120,7 @@ export default async function ContactPage() {
       </div>
 
       <div className="mt-14">
-        <p className="eyebrow">Follow</p>
+        <p className="eyebrow">{t("contact.follow")}</p>
         <SocialLinks
           className="-ml-2 mt-3"
           linkClassName="text-graphite hover:text-ink"

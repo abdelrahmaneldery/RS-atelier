@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 
 import { ASPECT, IMAGE_SIZES, occasionImage } from "@/config/media";
+import { getT } from "@/lib/i18n/server";
 import { OCCASION_CATEGORIES, SERVICE_POINTS } from "@/config/site";
 import { AtelierImage } from "@/components/ui/atelier-image";
 import { Container, Eyebrow } from "@/components/ui/primitives";
@@ -29,11 +30,16 @@ export function StorefrontHero({ shopHref }: { shopHref: string }) {
 
 // --- 4. Occasion categories -------------------------------------------------
 
-export function OccasionCategories({ shopHref }: { shopHref: string }) {
+export async function OccasionCategories({ shopHref }: { shopHref: string }) {
+  const t = await getT();
   return (
     <section className="py-10 lg:py-16">
       <Container>
-        <SectionHead title="Shop by Occasion" href={shopHref} linkLabel="All Gowns" />
+        <SectionHead
+          title={t("home.shopByOccasion")}
+          href={shopHref}
+          linkLabel={t("cta.viewAll")}
+        />
         {/* Horizontal scroll rail: cards scroll rather than wrapping into rows. */}
         <DragScroll className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 lg:gap-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {OCCASION_CATEGORIES.map((cat) => (
@@ -63,7 +69,7 @@ export function OccasionCategories({ shopHref }: { shopHref: string }) {
                     className="font-display text-lg leading-tight text-white lg:text-2xl"
                     style={{ textShadow: "0 2px 14px rgb(22 19 15 / 0.55)" }}
                   >
-                    {cat.label}
+                    {t(`occasions.${cat.label}`)}
                   </span>
                 </span>
               </Link>

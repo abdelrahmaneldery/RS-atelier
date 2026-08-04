@@ -9,6 +9,7 @@ import { X, ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { IMAGE_SIZES } from "@/config/media";
 import { overlayFade } from "@/lib/motion";
+import { useT } from "@/components/i18n/locale-provider";
 import { AtelierImage } from "@/components/ui/atelier-image";
 import { DragScroll } from "@/components/ui/drag-scroll";
 
@@ -41,6 +42,7 @@ export function ProductGallery({
   /** Adds a subtle "representative photography" caption over the image. */
   isDemo?: boolean;
 }) {
+  const t = useT();
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -73,8 +75,7 @@ export function ProductGallery({
         />
         {isDemo ? (
           <p className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/65 via-ink/20 to-transparent px-4 pb-3 pt-10 font-sans text-[0.625rem] leading-relaxed text-white/85">
-            Photography shown is representative — photographs of this individual
-            gown are being prepared.
+            {t("gallery.representative")}
           </p>
         ) : null}
       </div>
@@ -141,6 +142,7 @@ function ZoomableImage({
   alt: string;
   onOpen: () => void;
 }) {
+  const t = useT();
   const frameRef = useRef<HTMLButtonElement>(null);
   const zoomRef = useRef<HTMLDivElement>(null);
 
@@ -176,7 +178,7 @@ function ZoomableImage({
       onMouseMove={moveOrigin}
       onMouseEnter={enter}
       onMouseLeave={leave}
-      aria-label="Open full-size image"
+      aria-label={t("gallery.openFullSize")}
       className="image-frame group relative block w-full cursor-zoom-in overflow-hidden lg:h-full"
       style={{ aspectRatio: DETAIL_ASPECT }}
     >
@@ -213,6 +215,7 @@ function Lightbox({
   onIndex: (next: number) => void;
   onClose: () => void;
 }) {
+  const t = useT();
   const count = images.length;
   const current = images[index];
   const [zoomed, setZoomed] = useState(false);
@@ -274,7 +277,7 @@ function Lightbox({
           e.stopPropagation();
           onClose();
         }}
-        aria-label="Close"
+        aria-label={t("common.close")}
         className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center text-ivory/80 transition-colors hover:text-ivory"
       >
         <X aria-hidden="true" className="h-6 w-6" strokeWidth={1.5} />
@@ -304,7 +307,7 @@ function Lightbox({
               e.stopPropagation();
               go(-1);
             }}
-            aria-label="Previous image"
+            aria-label={t("gallery.prevImage")}
             className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-ivory/30 text-ivory/85 backdrop-blur-sm transition-colors hover:border-ivory hover:text-ivory sm:left-5"
           >
             <ChevronLeft aria-hidden="true" className="h-5 w-5" strokeWidth={1.5} />
@@ -315,7 +318,7 @@ function Lightbox({
               e.stopPropagation();
               go(1);
             }}
-            aria-label="Next image"
+            aria-label={t("gallery.nextImage")}
             className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-ivory/30 text-ivory/85 backdrop-blur-sm transition-colors hover:border-ivory hover:text-ivory sm:right-5"
           >
             <ChevronRight aria-hidden="true" className="h-5 w-5" strokeWidth={1.5} />

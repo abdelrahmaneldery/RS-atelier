@@ -6,6 +6,7 @@ import { submitLead, type LeadState } from "@/app/(site)/actions";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/primitives";
+import { useT } from "@/components/i18n/locale-provider";
 
 /**
  * Flow A — "call me" (§6).
@@ -23,6 +24,7 @@ export function LeadForm({
   productId?: string;
   defaultNote?: string;
 }) {
+  const t = useT();
   const [state, formAction, pending] = useActionState<LeadState, FormData>(
     submitLead,
     { status: "idle" },
@@ -34,10 +36,9 @@ export function LeadForm({
         role="status"
         className="border-l-2 border-success bg-success-soft px-5 py-5"
       >
-        <p className="font-display text-xl text-ink">Thank you — we have your details.</p>
+        <p className="font-display text-xl text-ink">{t("form.sentTitle")}</p>
         <p className="mt-2 text-sm leading-relaxed text-graphite">
-          The store team will call you shortly. Please note this does not hold
-          a gown; the store confirms availability with you directly.
+          {t("form.sentBody")}
         </p>
       </div>
     );
@@ -47,7 +48,7 @@ export function LeadForm({
     <form action={formAction} className="w-full" noValidate>
       {state.status === "error" ? (
         <div className="mb-6">
-          <ErrorState title="We could not send that" body={state.error} />
+          <ErrorState title={t("form.errorTitle")} body={state.error} />
         </div>
       ) : null}
 
@@ -55,15 +56,15 @@ export function LeadForm({
       {productId ? <input type="hidden" name="productId" value={productId} /> : null}
 
       <div className="flex flex-col gap-6">
-        <Field label="Full Name" htmlFor="lead-name" required>
+        <Field label={t("form.fullName")} htmlFor="lead-name" required>
           <Input id="lead-name" name="name" autoComplete="name" required />
         </Field>
 
         <Field
-          label="Mobile Number"
+          label={t("form.mobileNumber")}
           htmlFor="lead-phone"
           required
-          hint="Egyptian mobile, e.g. 010 1234 5678."
+          hint={t("form.mobileHint")}
         >
           <Input
             id="lead-phone"
@@ -77,23 +78,23 @@ export function LeadForm({
           />
         </Field>
 
-        <Field label="Message" htmlFor="lead-note">
+        <Field label={t("form.message")} htmlFor="lead-note">
           <Textarea
             id="lead-note"
             name="note"
             defaultValue={defaultNote}
             maxLength={2000}
-            placeholder="Tell us about your occasion, your date, or the piece you have in mind."
+            placeholder={t("form.messagePlaceholder")}
           />
         </Field>
       </div>
 
       <Button type="submit" size="lg" variant="secondary" className="mt-8" disabled={pending}>
-        {pending ? "Sending…" : "Request a Call"}
+        {pending ? t("form.sending") : t("form.requestCall")}
       </Button>
 
       <p className="mt-4 text-xs leading-relaxed text-mist">
-        Requesting a call does not reserve a gown.
+        {t("form.doesNotReserve")}
       </p>
     </form>
   );

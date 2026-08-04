@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { DragScroll } from "@/components/ui/drag-scroll";
 import { Input, Select } from "@/components/ui/field";
 import { ProductGrid, type CardAvailability } from "@/components/catalogue/product-card";
+import { useLocale, useT } from "@/components/i18n/locale-provider";
 import { shopAvailability } from "@/app/(site)/shop/actions";
 
 type Branch = {
@@ -59,6 +60,9 @@ export function ShopClient({
   branch: Branch;
   products: ApiProductCard[];
 }) {
+  const t = useT();
+  const isArabic = useLocale() === "ar";
+
   // Applied filters — these drive the product grid.
   const [category, setCategory] = useState("All Dresses");
   const [colour, setColour] = useState("");
@@ -196,11 +200,14 @@ export function ShopClient({
   // Availability annotation for a card, given the current date filter.
   function availabilityFor(p: ApiProductCard): CardAvailability {
     if (!date || !availIds) {
-      return { label: `Condition: ${HEALTH_BAND_LABELS[p.healthBand]}`, free: null };
+      return {
+        label: t("shop.condition", { band: HEALTH_BAND_LABELS[p.healthBand] }),
+        free: null,
+      };
     }
     return availIds.has(p.id)
-      ? { label: "Available on your date", free: true }
-      : { label: "Not available that night", free: false };
+      ? { label: t("shop.availableOnDate"), free: true }
+      : { label: t("shop.notAvailableThatNight"), free: false };
   }
 
   return (
@@ -208,7 +215,7 @@ export function ShopClient({
       {/* 1. Small header ---------------------------------------------------- */}
       <Container className="pt-8 lg:pt-10">
         <h1 className="font-display text-[2.1rem] leading-[1.1] text-ink sm:text-[2.75rem]">
-          Shop the Collection
+          {t("shop.title")}
         </h1>
         <p className="mt-4 text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-graphite">
           {SITE.shortName}
@@ -228,13 +235,16 @@ export function ShopClient({
                     onClick={() => setCategory(c.label)}
                     aria-pressed={active}
                     className={cn(
-                      "inline-flex min-h-10 items-center whitespace-nowrap border px-4 py-2 font-sans text-[0.6875rem] font-medium uppercase tracking-[0.12em] transition-colors",
+                      "inline-flex items-center whitespace-nowrap border font-sans font-medium uppercase tracking-[0.12em] transition-colors",
+                      isArabic
+                        ? "min-h-11 px-5 py-2.5 text-[0.8125rem]"
+                        : "min-h-10 px-4 py-2 text-[0.6875rem]",
                       active
                         ? "border-ink bg-ink text-ivory"
                         : "border-line-strong text-charcoal hover:border-ink hover:text-ink",
                     )}
                   >
-                    {c.label}
+                    {t(`shop.cat.${c.label}`)}
                   </button>
                 </li>
               );
@@ -248,7 +258,7 @@ export function ShopClient({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <label htmlFor="shop-search" className="sr-only">
-              Search gowns
+              {t("shop.searchAria")}
             </label>
             <Search
               aria-hidden="true"
@@ -258,7 +268,7 @@ export function ShopClient({
             <Input
               id="shop-search"
               type="search"
-              placeholder="Search gowns, colours, collections…"
+              placeholder={t("shop.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.currentTarget.value)}
               className="pl-10"
@@ -268,7 +278,7 @@ export function ShopClient({
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1 sm:w-52 sm:flex-none">
               <label htmlFor="shop-sort" className="sr-only">
-                Sort by
+                {t("shop.sortByAria")}
               </label>
               <Select
                 id="shop-sort"
@@ -277,7 +287,7 @@ export function ShopClient({
               >
                 {SORT_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
-                    {o.label}
+                    {t(`shop.sort.${o.value}`)}
                   </option>
                 ))}
               </Select>
@@ -292,7 +302,7 @@ export function ShopClient({
               className="shrink-0"
             >
               <SlidersHorizontal aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
-              Filters
+              {t("shop.filters")}
               {activeCount > 0 ? (
                 <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold-deep px-1 text-[0.625rem] font-semibold text-white">
                   {activeCount}
@@ -306,11 +316,15 @@ export function ShopClient({
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
           <p className="text-sm text-stone" aria-live="polite">
             {pending
-              ? "Checking availability…"
-              : `${filtered.length} ${filtered.length === 1 ? "gown" : "gowns"}`}
+              ? t("shop.checkingAvailability")
+              : t("shop.gownsCount", { count: filtered.length })}
             {availWindow && date && !pending ? (
               <span className="ml-2 text-mist">
-                · collect {availWindow.handover}, return {availWindow.takeback}
+                ·{" "}
+                {t("shop.collectReturn", {
+                  handover: availWindow.handover,
+                  takeback: availWindow.takeback,
+                })}
               </span>
             ) : null}
           </p>
@@ -320,7 +334,7 @@ export function ShopClient({
               onClick={resetFilters}
               className="link-underline font-sans text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-ink"
             >
-              Clear all
+              {t("shop.clearAll")}
             </button>
           ) : null}
         </div>
@@ -342,8 +356,8 @@ export function ShopClient({
           />
         ) : (
           <EmptyState
-            title="No gowns match those filters"
-            body="Try a different occasion, colour or date — or clear the filters to see the full collection."
+            title={t("shop.emptyTitle")}
+            body={t("shop.emptyBody")}
             action={
               <Button
                 type="button"
@@ -353,7 +367,7 @@ export function ShopClient({
                   setSearch("");
                 }}
               >
-                Clear Filters
+                {t("shop.clearFilters")}
               </Button>
             }
           />
@@ -363,7 +377,11 @@ export function ShopClient({
       {/* Filter drawer (all breakpoints) ----------------------------------- */}
       {drawerOpen ? (
         <FilterDrawer onClose={() => setDrawerOpen(false)} onClear={clearDraftFilters} onApply={applyFilters}>
-          <FilterField label="Event Date" htmlFor="f-date" hint={`Up to ${HORIZON_DAYS} days ahead`}>
+          <FilterField
+            label={t("shop.eventDate")}
+            htmlFor="f-date"
+            hint={t("shop.upToDays", { days: HORIZON_DAYS })}
+          >
             <Input
               id="f-date"
               type="date"
@@ -376,7 +394,7 @@ export function ShopClient({
 
           <fieldset className="flex flex-col gap-3 border-0 p-0">
             <legend className="mb-1 font-sans text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-graphite">
-              Colour
+              {t("shop.colour")}
             </legend>
             <ColourSwatches
               options={colourOptions}
@@ -385,7 +403,7 @@ export function ShopClient({
             />
           </fieldset>
 
-          <FilterField label="Occasion" htmlFor="f-occasion">
+          <FilterField label={t("shop.occasion")} htmlFor="f-occasion">
             <Select
               id="f-occasion"
               value={draftCategory}
@@ -393,7 +411,7 @@ export function ShopClient({
             >
               {SHOP_CATEGORIES.map((c) => (
                 <option key={c.label} value={c.label}>
-                  {c.label}
+                  {t(`shop.cat.${c.label}`)}
                 </option>
               ))}
             </Select>
@@ -419,21 +437,25 @@ function ColourSwatches({
   value: string;
   onChange: (next: string) => void;
 }) {
+  const t = useT();
   if (options.length === 0) {
-    return <p className="text-xs text-mist">No colours to filter.</p>;
+    return <p className="text-xs text-mist">{t("shop.noColours")}</p>;
   }
 
   return (
     <ul className="grid grid-cols-3 gap-x-3 gap-y-2.5">
       {options.map((c) => {
         const selected = value === c;
+        const key = `colours.${c.toLowerCase()}`;
+        const translated = t(key);
+        const label = translated === key ? titleCase(c) : translated;
         return (
           <li key={c}>
             <button
               type="button"
               onClick={() => onChange(selected ? "" : c)}
               aria-pressed={selected}
-              aria-label={titleCase(c)}
+              aria-label={label}
               className="group flex w-full items-center gap-2.5 py-1 text-left focus:outline-none"
             >
               <span
@@ -453,7 +475,7 @@ function ColourSwatches({
                   selected ? "font-medium text-ink" : "text-stone",
                 )}
               >
-                {titleCase(c)}
+                {label}
               </span>
             </button>
           </li>
@@ -505,6 +527,7 @@ function FilterDrawer({
   onApply: () => void;
   children: React.ReactNode;
 }) {
+  const t = useT();
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -524,7 +547,7 @@ function FilterDrawer({
     <div className="fixed inset-0 z-[80]">
       <button
         type="button"
-        aria-label="Close filters"
+        aria-label={t("shop.closeFilters")}
         onClick={onClose}
         className="absolute inset-0 h-full w-full cursor-default bg-ink/45"
       />
@@ -533,15 +556,15 @@ function FilterDrawer({
         tabIndex={-1}
         role="dialog"
         aria-modal="true"
-        aria-label="Filters"
+        aria-label={t("shop.filters")}
         className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-ivory shadow-raised focus:outline-none"
       >
         <div className="flex h-[var(--header-h)] items-center justify-between border-b border-line px-5">
-          <h2 className="font-display text-xl text-ink">Filters</h2>
+          <h2 className="font-display text-xl text-ink">{t("shop.filters")}</h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close filters"
+            aria-label={t("shop.closeFilters")}
             className="flex h-11 w-11 items-center justify-center text-graphite hover:text-ink"
           >
             <X aria-hidden="true" className="h-5 w-5" strokeWidth={1.5} />
@@ -554,10 +577,10 @@ function FilterDrawer({
 
         <div className="flex items-center gap-3 border-t border-line p-5">
           <Button type="button" variant="secondary" onClick={onClear} className="flex-1">
-            Clear All
+            {t("shop.clearAll")}
           </Button>
           <Button type="button" onClick={onApply} className="flex-1">
-            Apply Filters
+            {t("shop.applyFilters")}
           </Button>
         </div>
       </div>
