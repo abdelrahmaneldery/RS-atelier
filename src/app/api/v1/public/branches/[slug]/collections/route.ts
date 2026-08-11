@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/prisma";
+import { getDb } from "@/lib/db";
 import {
-  visibleBranchWhere,
-  visibleProductWhere,
+  isBranchVisible,
+  isProductVisible,
 } from "@/lib/domain/availability";
 import { notFound, ok } from "../../../../_lib/serialise";
 
@@ -11,41 +11,17 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params;
+  const db = getDb();
 
-  const branch = await prisma.branch.findFirst({
-    where: { slug, ...visibleBranchWhere() },
-    select: { id: true },
-  });
+  const branch = db.branches.find((b) => b.slug === slug && isBranchVisible(b));
   if (!branch) return notFound("Branch not found.");
 
-  const collections = await prisma.collection.findMany({
-    where: { branchId: branch.id, published: true },
-    orderBy: { sortOrder: "asc" },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      description: true,
-      coverImage: true,
-    },
-  });
+  const collections = db.collections
+    .filter((c) => c.branchId === branch.id && c.published)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
 
-  // Counted separately, and only over dresses that are actually visible, so a
-  // collection never advertises pieces the customer cannot open.
-  const counts = await prisma.product.groupBy({
-    by: ["collectionId"],
-    where: {
-      ...visibleProductWhere(),
-      branchId: branch.id,
-      collectionId: { in: collections.map((c) => c.id) },
-    },
-    _count: { _all: true },
-  });
-
-  const countByCollection = new Map(
-    counts.map((row) => [row.collectionId, row._count._all]),
-  );
-
+  // Counted only over dresses that are actually visible, so a collection
+  // never advertises pieces the customer cannot open.
   return ok(
     collections.map((c) => ({
       id: c.id,
@@ -53,7 +29,9 @@ export async function GET(
       slug: c.slug,
       description: c.description,
       coverImage: c.coverImage,
-      productCount: countByCollection.get(c.id) ?? 0,
+      productCount: db.products.filter(
+        (p) => p.collectionId === c.id && isProductVisible(p, db),
+      ).length,
     })),
   );
 }

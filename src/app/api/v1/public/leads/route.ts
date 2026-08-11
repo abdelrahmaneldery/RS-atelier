@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/prisma";
+import { getDb, nowIso, persistDb, uid } from "@/lib/db";
+import { upsertCustomer } from "@/lib/domain/booking";
 import { normalizePhone } from "@/lib/phone";
 import { checkRateLimit, getClientKey, rateLimitMessage } from "@/lib/rate-limit";
 import { fail, ok } from "../../_lib/serialise";
@@ -14,7 +15,7 @@ import { fail, ok } from "../../_lib/serialise";
  */
 export async function POST(request: Request) {
   const clientKey = await getClientKey();
-  const limit = await checkRateLimit("leadSubmit", clientKey);
+  const limit = checkRateLimit("leadSubmit", clientKey);
   if (!limit.allowed) {
     return fail(429, "RATE_LIMITED", rateLimitMessage(limit.retryAfterSeconds));
   }
@@ -42,32 +43,28 @@ export async function POST(request: Request) {
   const phone = normalizePhone(input.phone ?? "");
   if (!phone.ok) return fail(422, "INVALID_INPUT", phone.error);
 
-  const existing = await prisma.customer.findUnique({
-    where: { normalizedPhone: phone.normalized },
-    select: { id: true },
+  const db = getDb();
+
+  const existing = db.customers.some(
+    (c) => c.normalizedPhone === phone.normalized,
+  );
+
+  const customer = upsertCustomer(db, {
+    name,
+    phone: input.phone!.trim(),
+    normalizedPhone: phone.normalized,
   });
 
-  const customer = await prisma.customer.upsert({
-    where: { normalizedPhone: phone.normalized },
-    create: {
-      name,
-      phone: input.phone!.trim(),
-      normalizedPhone: phone.normalized,
-      source: "website",
-    },
-    update: { name, phone: input.phone!.trim() },
-    select: { id: true },
-  });
-
-  const lead = await prisma.lead.create({
-    data: {
-      customerId: customer.id,
-      branchId: input.branchId ?? null,
-      productId: input.productId ?? null,
-      note: input.note?.trim().slice(0, 2000) || null,
-    },
-    select: { id: true },
-  });
+  const lead = {
+    id: uid(),
+    customerId: customer.id,
+    branchId: input.branchId ?? null,
+    productId: input.productId ?? null,
+    note: input.note?.trim().slice(0, 2000) || null,
+    createdAt: nowIso(),
+  };
+  db.leads.push(lead);
+  persistDb();
 
   return ok({ id: lead.id, created: !existing }, { status: 201 });
 }

@@ -1,13 +1,12 @@
-import { prisma } from "@/lib/prisma";
-import { normalizePhone } from "@/lib/phone";
+import { getDb } from "@/lib/db";
+import { findBookingForCustomer } from "@/lib/domain/booking";
 import { checkRateLimit, getClientKey, rateLimitMessage } from "@/lib/rate-limit";
 import {
-  PRODUCT_INCLUDE,
+  buildBookingRow,
   fail,
   notFound,
   ok,
   serialiseBooking,
-  type BookingRow,
 } from "../../_lib/serialise";
 
 /**
@@ -22,31 +21,20 @@ export async function GET(
   { params }: { params: Promise<{ reference: string }> },
 ) {
   const clientKey = await getClientKey();
-  const limit = await checkRateLimit("bookingLookup", clientKey);
+  const limit = checkRateLimit("bookingLookup", clientKey);
   if (!limit.allowed) {
     return fail(429, "RATE_LIMITED", rateLimitMessage(limit.retryAfterSeconds));
   }
 
   const { reference } = await params;
   const url = new URL(request.url);
-  const phone = normalizePhone(url.searchParams.get("phone") ?? "");
 
-  if (!phone.ok) return notFound("We could not find that booking.");
-
-  const booking = await prisma.booking.findFirst({
-    where: {
-      reference: reference.trim().toUpperCase(),
-      customer: { normalizedPhone: phone.normalized },
-    },
-    include: {
-      customer: { select: { name: true } },
-      product: { include: PRODUCT_INCLUDE },
-      payments: { select: { type: true, direction: true } },
-      idHold: { select: { id: true, releasedAt: true } },
-    },
-  });
+  const booking = findBookingForCustomer(
+    reference,
+    url.searchParams.get("phone") ?? "",
+  );
 
   if (!booking) return notFound("We could not find that booking.");
 
-  return ok(serialiseBooking(booking as BookingRow));
+  return ok(serialiseBooking(buildBookingRow(booking, getDb())));
 }

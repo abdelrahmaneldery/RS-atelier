@@ -1,9 +1,13 @@
 import "server-only";
 
-import type { Prisma } from "@/generated/prisma/client";
-
-import { prisma } from "@/lib/prisma";
-import { ACTIVE_BOOKING_STATUSES } from "./constants";
+import {
+  getDb,
+  type BranchRecord,
+  type CollectionRecord,
+  type Database,
+  type ProductRecord,
+} from "@/lib/db";
+import { ACTIVE_BOOKING_STATUSES, type BookingStatus } from "./constants";
 import {
   addDays,
   checkWindowGuards,
@@ -25,22 +29,26 @@ import {
  *
  * Availability shown to a customer is ADVISORY. Between rendering a calendar
  * and pressing Book, the floor or another customer can take the dress, so
- * create re-checks under a transaction and may still fail with a clash.
+ * create re-checks at write time and may still fail with a clash.
  */
 
 export type Occupancy = { start: Date; end: Date; bookingId: string };
 
 /** Occupied intervals for a dress, from every booking that still holds it. */
-export async function getOccupancy(productId: string): Promise<Occupancy[]> {
-  const bookings = await prisma.booking.findMany({
-    where: { productId, status: { in: ACTIVE_BOOKING_STATUSES } },
-    select: { id: true, handoverDate: true, takebackDate: true },
-  });
-
-  return bookings.map((b) => {
-    const interval = occupiedInterval(b);
-    return { ...interval, bookingId: b.id };
-  });
+export function getOccupancy(productId: string, db: Database = getDb()): Occupancy[] {
+  return db.bookings
+    .filter(
+      (b) =>
+        b.productId === productId &&
+        ACTIVE_BOOKING_STATUSES.includes(b.status as BookingStatus),
+    )
+    .map((b) => {
+      const interval = occupiedInterval({
+        handoverDate: new Date(b.handoverDate),
+        takebackDate: new Date(b.takebackDate),
+      });
+      return { ...interval, bookingId: b.id };
+    });
 }
 
 export type ClashResult =
@@ -65,18 +73,18 @@ export function detectClash(
  * Mode 1 — dress → free dates (§5).
  * Event dates within the range for which the default ±1 window would not clash.
  */
-export async function getFreeDatesForProduct(params: {
+export function getFreeDatesForProduct(params: {
   productId: string;
   from?: Date;
   to?: Date;
-}): Promise<{ dates: string[]; from: string; to: string }> {
+}): { dates: string[]; from: string; to: string } {
   const today = startOfDay(new Date());
   // Never offer a past date, and never beyond the horizon.
   const from = params.from && params.from > today ? startOfDay(params.from) : today;
   const horizon = horizonDate(today);
   const to = params.to && params.to < horizon ? startOfDay(params.to) : horizon;
 
-  const occupancy = await getOccupancy(params.productId);
+  const occupancy = getOccupancy(params.productId);
   const dates: string[] = [];
 
   for (let cursor = from; cursor <= to; cursor = addDays(cursor, 1)) {
@@ -93,35 +101,25 @@ export async function getFreeDatesForProduct(params: {
  * Mode 2 — date → free dresses (§5).
  * Published dresses in a branch whose default window is free for that event.
  */
-export async function getFreeProductsForDate(params: {
+export function getFreeProductsForDate(params: {
   branchId: string;
   eventDate: Date;
   collectionId?: string;
-}): Promise<string[]> {
+}): string[] {
   const window = deriveWindow(params.eventDate);
   if (checkWindowGuards(window)) return [];
 
-  const candidates = await prisma.product.findMany({
-    where: {
-      ...visibleProductWhere(),
-      branchId: params.branchId,
-      ...(params.collectionId ? { collectionId: params.collectionId } : {}),
-    },
-    select: {
-      id: true,
-      bookings: {
-        where: { status: { in: ACTIVE_BOOKING_STATUSES } },
-        select: { id: true, handoverDate: true, takebackDate: true },
-      },
-    },
-  });
+  const db = getDb();
+  const candidates = db.products.filter(
+    (p) =>
+      isProductVisible(p, db) &&
+      p.branchId === params.branchId &&
+      (!params.collectionId || p.collectionId === params.collectionId),
+  );
 
   return candidates
     .filter((product) => {
-      const occupancy = product.bookings.map((b) => ({
-        ...occupiedInterval(b),
-        bookingId: b.id,
-      }));
+      const occupancy = getOccupancy(product.id, db);
       return !detectClash(window, occupancy).clashes;
     })
     .map((p) => p.id);
@@ -132,26 +130,33 @@ export async function getFreeProductsForDate(params: {
  *   published · not Retired · at least one image · branch active AND published ·
  *   collection published (or no collection).
  *
- * Returned as a Prisma `where` fragment so it can never be forgotten at a
- * call site — every public read composes this.
+ * Kept as predicate functions so it can never be forgotten at a call site —
+ * every public read composes one of these.
  */
-export function visibleProductWhere() {
-  return {
-    published: true,
-    status: { not: "Retired" },
-    images: { some: {} },
-    branch: { active: true, published: true },
-    OR: [{ collectionId: null }, { collection: { published: true } }],
-  } satisfies Prisma.ProductWhereInput;
+export function isProductVisible(
+  product: ProductRecord,
+  db: Database = getDb(),
+): boolean {
+  if (!product.published || product.status === "Retired") return false;
+  if (!db.productImages.some((i) => i.productId === product.id)) return false;
+  const branch = db.branches.find((b) => b.id === product.branchId);
+  if (!branch || !isBranchVisible(branch)) return false;
+  if (product.collectionId !== null) {
+    const collection = db.collections.find((c) => c.id === product.collectionId);
+    if (!collection || !collection.published) return false;
+  }
+  return true;
 }
 
-export function visibleBranchWhere() {
-  return { active: true, published: true } satisfies Prisma.BranchWhereInput;
+export function isBranchVisible(branch: BranchRecord): boolean {
+  return branch.active && branch.published;
 }
 
-export function visibleCollectionWhere() {
-  return {
-    published: true,
-    branch: { active: true, published: true },
-  } satisfies Prisma.CollectionWhereInput;
+export function isCollectionVisible(
+  collection: CollectionRecord,
+  db: Database = getDb(),
+): boolean {
+  if (!collection.published) return false;
+  const branch = db.branches.find((b) => b.id === collection.branchId);
+  return Boolean(branch && isBranchVisible(branch));
 }

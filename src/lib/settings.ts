@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
-import { prisma } from "./prisma";
+import { getDb } from "./db";
 
 /**
  * Editorial and policy content.
@@ -66,7 +66,7 @@ export type SettingValue = {
 /** Deduplicated per request. */
 export const loadSettings = cache(
   async (): Promise<Map<SettingKey, SettingValue>> => {
-    const rows = await prisma.setting.findMany();
+    const rows = getDb().settings;
     const map = new Map<SettingKey, SettingValue>();
     for (const key of Object.values(SETTING_KEYS)) {
       const row = rows.find((r) => r.key === key);

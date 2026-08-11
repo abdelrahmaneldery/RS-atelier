@@ -5,7 +5,6 @@ import { z } from "zod";
  * Never import this from a client component.
  */
 const schema = z.object({
-  DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   /** Signs staff sessions and keys the rate-limit fingerprint. */
   SESSION_SECRET: z
     .string()

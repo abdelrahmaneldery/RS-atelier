@@ -1,12 +1,11 @@
-import { prisma } from "@/lib/prisma";
+import { getDb } from "@/lib/db";
 import { getFreeProductsForDate } from "@/lib/domain/availability";
 import { deriveWindow, fromDateKey, toDateKey } from "@/lib/domain/dates";
 import {
-  PRODUCT_INCLUDE,
+  buildProductRow,
   fail,
   ok,
   serialiseProductCard,
-  type ProductRow,
 } from "../../_lib/serialise";
 
 /**
@@ -32,19 +31,14 @@ export async function GET(request: Request) {
     return fail(422, "INVALID_INPUT", "event_date must be YYYY-MM-DD.");
   }
 
-  const freeIds = await getFreeProductsForDate({
-    branchId,
-    eventDate,
-    collectionId,
-  });
+  const db = getDb();
+  const freeIds = new Set(
+    getFreeProductsForDate({ branchId, eventDate, collectionId }),
+  );
 
-  const products = freeIds.length
-    ? await prisma.product.findMany({
-        where: { id: { in: freeIds } },
-        include: PRODUCT_INCLUDE,
-        orderBy: { createdAt: "desc" },
-      })
-    : [];
+  const products = db.products
+    .filter((p) => freeIds.has(p.id))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   const window = deriveWindow(eventDate);
 
@@ -53,6 +47,6 @@ export async function GET(request: Request) {
     eventDate: toDateKey(window.eventDate),
     handoverDate: toDateKey(window.handoverDate),
     takebackDate: toDateKey(window.takebackDate),
-    products: products.map((p) => serialiseProductCard(p as ProductRow)),
+    products: products.map((p) => serialiseProductCard(buildProductRow(p, db))),
   });
 }

@@ -1,11 +1,10 @@
-import { prisma } from "@/lib/prisma";
-import { visibleProductWhere } from "@/lib/domain/availability";
+import { getDb } from "@/lib/db";
+import { isProductVisible } from "@/lib/domain/availability";
 import {
-  PRODUCT_INCLUDE,
+  buildProductRow,
   notFound,
   ok,
   serialiseProductDetail,
-  type ProductRow,
 } from "../../../_lib/serialise";
 
 /**
@@ -19,13 +18,13 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params;
+  const db = getDb();
 
-  const product = await prisma.product.findFirst({
-    where: { slug, ...visibleProductWhere() },
-    include: PRODUCT_INCLUDE,
-  });
+  const product = db.products.find(
+    (p) => p.slug === slug && isProductVisible(p, db),
+  );
 
   if (!product) return notFound("Dress not found.");
 
-  return ok(serialiseProductDetail(product as ProductRow));
+  return ok(serialiseProductDetail(buildProductRow(product, db)));
 }

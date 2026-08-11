@@ -1,15 +1,15 @@
 import type { MetadataRoute } from "next";
 
-import { prisma } from "@/lib/prisma";
+import { getDb } from "@/lib/db";
 import { siteUrl } from "@/lib/seo";
-import { visibleProductWhere } from "@/lib/domain/availability";
+import { isProductVisible } from "@/lib/domain/availability";
 
 /**
  * Sitemap. Only public, indexable pages appear — the booking flow and booking
  * lookup are private to a single customer and are excluded.
  *
- * Reads the database directly rather than via the API client, because this
- * runs at build time when no HTTP origin is guaranteed to be listening.
+ * Reads the store directly rather than via the API client, because this runs
+ * at build time when no HTTP origin is guaranteed to be listening.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteUrl();
@@ -27,16 +27,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/terms`, changeFrequency: "yearly", priority: 0.2 },
   ];
 
-  const products = await prisma.product.findMany({
-    where: visibleProductWhere(),
-    select: { slug: true, updatedAt: true },
-  });
+  const db = getDb();
+  const products = db.products.filter((p) => isProductVisible(p, db));
 
   return [
     ...staticRoutes,
     ...products.map((p) => ({
       url: `${base}/dresses/${p.slug}`,
-      lastModified: p.updatedAt,
+      lastModified: new Date(p.updatedAt),
       changeFrequency: "daily" as const,
       priority: 0.7,
     })),

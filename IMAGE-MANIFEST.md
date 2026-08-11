@@ -49,8 +49,8 @@ One portrait image on the Our Story page. Config: `src/config/media.ts → EDITO
 
 ## 4 · Product photography  ·  dress-focused (dress-only or modest model)
 Portrait product shots used on **product cards, product detail, quick view, related,
-trending, recently-viewed, and gallery thumbnails**. These are seeded into the database
-from the files below (`prisma/seed.ts → DEMO_PHOTOS`); each gown uses two of them.
+trending, recently-viewed, and gallery thumbnails**. These are referenced from the
+data store (`src/data/db.json → productImages`); each gown uses two of them.
 
 - **Aspect ratio:** 2 : 3 (portrait)
 - **Recommended dimensions:** 1200 × 1800 (min 1000 × 1500)

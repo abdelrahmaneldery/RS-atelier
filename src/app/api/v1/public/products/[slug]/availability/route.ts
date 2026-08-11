@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/prisma";
+import { getDb } from "@/lib/db";
 import {
   getFreeDatesForProduct,
-  visibleProductWhere,
+  isProductVisible,
 } from "@/lib/domain/availability";
 import { fromDateKey } from "@/lib/domain/dates";
 import { notFound, ok } from "../../../../_lib/serialise";
@@ -19,17 +19,17 @@ export async function GET(
 ) {
   const { slug } = await params;
   const url = new URL(request.url);
+  const db = getDb();
 
-  const product = await prisma.product.findFirst({
-    where: { slug, ...visibleProductWhere() },
-    select: { id: true },
-  });
+  const product = db.products.find(
+    (p) => p.slug === slug && isProductVisible(p, db),
+  );
   if (!product) return notFound("Dress not found.");
 
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
 
-  const result = await getFreeDatesForProduct({
+  const result = getFreeDatesForProduct({
     productId: product.id,
     from: fromParam ? (fromDateKey(fromParam) ?? undefined) : undefined,
     to: toParam ? (fromDateKey(toParam) ?? undefined) : undefined,

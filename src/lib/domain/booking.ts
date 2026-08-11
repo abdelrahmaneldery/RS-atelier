@@ -1,6 +1,13 @@
 import "server-only";
 
-import { prisma } from "@/lib/prisma";
+import {
+  getDb,
+  nowIso,
+  persistDb,
+  uid,
+  type BookingRecord,
+  type Database,
+} from "@/lib/db";
 import { generateReference } from "@/lib/crypto";
 import { normalizePhone } from "@/lib/phone";
 import {
@@ -16,7 +23,7 @@ import {
   intervalsOverlap,
   occupiedInterval,
 } from "./dates";
-import { visibleProductWhere } from "./availability";
+import { isProductVisible } from "./availability";
 
 /**
  * Booking creation, confirmation and cancellation (§4, §6 Flow B, §7).
@@ -26,7 +33,9 @@ import { visibleProductWhere } from "./availability";
  * are not implemented here at all.
  *
  * Every write re-validates from scratch. Availability the customer saw was
- * advisory; this is where it becomes real.
+ * advisory; this is where it becomes real. The check-then-write section runs
+ * synchronously over the in-memory store, so no other request can interleave
+ * with it — the moral equivalent of the old database transaction.
  */
 
 export type BookingError = {
@@ -65,9 +74,7 @@ export type CreateBookingResult =
  * Stage 1 — Create / hold.
  * Booking → `pending`, dress `Available` → `Reserved`. No money is taken.
  */
-export async function createBooking(
-  input: CreateBookingInput,
-): Promise<CreateBookingResult> {
+export function createBooking(input: CreateBookingInput): CreateBookingResult {
   const name = input.customer.name?.trim();
   if (!name || name.length < 2) {
     return fail("INVALID_INPUT", "Enter your full name.", 422);
@@ -78,21 +85,16 @@ export async function createBooking(
 
   const window = deriveWindow(input.eventDate);
 
-  // Guards 2 and 3 — cheap, so run before touching the database.
+  // Guards 2 and 3 — cheap, so run before touching the store.
   const guard = checkWindowGuards(window);
   if (guard) return fail(guard.code, guard.message, 422);
 
+  const db = getDb();
+
   // Guard 1 — the dress must be publicly bookable.
-  const product = await prisma.product.findFirst({
-    where: { id: input.productId, ...visibleProductWhere() },
-    select: {
-      id: true,
-      branchId: true,
-      status: true,
-      price: true,
-      insuranceAmount: true,
-    },
-  });
+  const product = db.products.find(
+    (p) => p.id === input.productId && isProductVisible(p, db),
+  );
 
   if (!product) {
     return fail(
@@ -124,104 +126,91 @@ export async function createBooking(
   const balance = balanceFor(price);
   const insuranceAmount = product.insuranceAmount ?? 0;
 
-  const reference = await generateUniqueReference();
+  // Guard 4 — clash check at write time. The calendar the customer saw was
+  // advisory; this is the check that counts.
+  const active = db.bookings.filter(
+    (b) =>
+      b.productId === product.id &&
+      ACTIVE_BOOKING_STATUSES.includes(b.status as BookingStatus),
+  );
 
-  try {
-    const booking = await prisma.$transaction(async (tx) => {
-      // Guard 4 — clash check INSIDE the transaction. The calendar the
-      // customer saw was advisory; this is the check that counts.
-      const active = await tx.booking.findMany({
-        where: {
-          productId: product.id,
-          status: { in: ACTIVE_BOOKING_STATUSES },
-        },
-        select: { handoverDate: true, takebackDate: true },
-      });
-
-      const wanted = occupiedInterval(window);
-      const clash = active.some((b) =>
-        intervalsOverlap(wanted, occupiedInterval(b)),
-      );
-      if (clash) throw new ClashError();
-
-      // A dress that is not in the pool cannot be newly held, even with no
-      // overlapping booking (e.g. it is mid-cleaning or with another client).
-      const fresh = await tx.product.findUniqueOrThrow({
-        where: { id: product.id },
-        select: { status: true },
-      });
-      if (fresh.status !== "Available" && fresh.status !== "Reserved") {
-        throw new UnavailableError(fresh.status);
-      }
-
-      // Customer records are deduplicated by phone (§6).
-      const customer = await tx.customer.upsert({
-        where: { normalizedPhone: phone.normalized },
-        create: {
-          name,
-          phone: input.customer.phone.trim(),
-          normalizedPhone: phone.normalized,
-          source: "website",
-        },
-        update: { name, phone: input.customer.phone.trim() },
-        select: { id: true },
-      });
-
-      const created = await tx.booking.create({
-        data: {
-          reference,
-          customerId: customer.id,
-          productId: product.id,
-          branchId: product.branchId,
-          eventDate: window.eventDate,
-          handoverDate: window.handoverDate,
-          takebackDate: window.takebackDate,
-          price,
-          deposit,
-          balance,
-          insuranceAmount,
-          status: "pending",
-          source: "website",
-          statusLogs: {
-            create: {
-              fromStatus: null,
-              toStatus: "pending",
-              // Null member id marks a customer action (§6 Flow B).
-              memberId: null,
-              note: "Booking created from the website.",
-            },
-          },
-        },
-        select: { id: true, reference: true },
-      });
-
-      // Hold the dress, and count the request (powers the Trending rail).
-      await tx.product.update({
-        where: { id: product.id },
-        data: { status: "Reserved", requestCount: { increment: 1 } },
-      });
-
-      return created;
-    });
-
-    return { ok: true, reference: booking.reference, bookingId: booking.id };
-  } catch (error) {
-    if (error instanceof ClashError) {
-      return fail(
-        "CLASH",
-        "This dress was just taken for overlapping dates. Please choose another date or another dress.",
-        409,
-      );
-    }
-    if (error instanceof UnavailableError) {
-      return fail(
-        "PRODUCT_UNAVAILABLE",
-        "This dress is no longer available to book.",
-        409,
-      );
-    }
-    throw error;
+  const wanted = occupiedInterval(window);
+  const clash = active.some((b) =>
+    intervalsOverlap(
+      wanted,
+      occupiedInterval({
+        handoverDate: new Date(b.handoverDate),
+        takebackDate: new Date(b.takebackDate),
+      }),
+    ),
+  );
+  if (clash) {
+    return fail(
+      "CLASH",
+      "This dress was just taken for overlapping dates. Please choose another date or another dress.",
+      409,
+    );
   }
+
+  // A dress that is not in the pool cannot be newly held, even with no
+  // overlapping booking (e.g. it is mid-cleaning or with another client).
+  if (product.status !== "Available" && product.status !== "Reserved") {
+    return fail(
+      "PRODUCT_UNAVAILABLE",
+      "This dress is no longer available to book.",
+      409,
+    );
+  }
+
+  const reference = generateUniqueReference(db);
+  const now = nowIso();
+
+  // Customer records are deduplicated by phone (§6).
+  const customer = upsertCustomer(db, {
+    name,
+    phone: input.customer.phone.trim(),
+    normalizedPhone: phone.normalized,
+  });
+
+  const booking: BookingRecord = {
+    id: uid(),
+    reference,
+    customerId: customer.id,
+    productId: product.id,
+    branchId: product.branchId,
+    eventDate: window.eventDate.toISOString(),
+    handoverDate: window.handoverDate.toISOString(),
+    takebackDate: window.takebackDate.toISOString(),
+    price,
+    deposit,
+    balance,
+    insuranceAmount,
+    status: "pending",
+    source: "website",
+    createdAt: now,
+    updatedAt: now,
+  };
+  db.bookings.push(booking);
+
+  db.bookingStatusLogs.push({
+    id: uid(),
+    bookingId: booking.id,
+    fromStatus: null,
+    toStatus: "pending",
+    // Null member id marks a customer action (§6 Flow B).
+    memberId: null,
+    note: "Booking created from the website.",
+    createdAt: now,
+  });
+
+  // Hold the dress, and count the request (powers the Trending rail).
+  product.status = "Reserved";
+  product.requestCount += 1;
+  product.updatedAt = now;
+
+  persistDb();
+
+  return { ok: true, reference: booking.reference, bookingId: booking.id };
 }
 
 export type ConfirmBookingInput = {
@@ -240,10 +229,11 @@ export type ConfirmBookingResult =
  * Records the deposit and the ID hold, and moves the booking to `confirmed`.
  * The dress stays `Reserved`; only handover changes that, and only in branch.
  */
-export async function confirmBooking(
+export function confirmBooking(
   input: ConfirmBookingInput,
-): Promise<ConfirmBookingResult> {
-  const booking = await findBookingForCustomer(input.reference, input.phone);
+): ConfirmBookingResult {
+  const db = getDb();
+  const booking = findBookingForCustomer(input.reference, input.phone);
   if (!booking) {
     return fail("NOT_FOUND", "We could not find that booking.", 404);
   }
@@ -274,45 +264,50 @@ export async function confirmBooking(
     );
   }
 
-  await prisma.$transaction([
-    prisma.payment.create({
-      data: {
-        bookingId: booking.id,
-        type: "deposit",
-        direction: "in",
-        amount: booking.deposit,
-        method: input.deposit.method,
-        // Null marks a customer-initiated (online) payment.
-        memberId: null,
-      },
-    }),
-    prisma.idHold.upsert({
-      where: { bookingId: booking.id },
-      create: {
-        bookingId: booking.id,
-        fileRef: input.idFile.fileRef,
-        fileName: input.idFile.fileName ?? null,
-      },
-      update: {
-        fileRef: input.idFile.fileRef,
-        fileName: input.idFile.fileName ?? null,
-        releasedAt: null,
-      },
-    }),
-    prisma.booking.update({
-      where: { id: booking.id },
-      data: { status: "confirmed" },
-    }),
-    prisma.bookingStatusLog.create({
-      data: {
-        bookingId: booking.id,
-        fromStatus: "pending",
-        toStatus: "confirmed",
-        memberId: null,
-        note: "Deposit recorded and identity document submitted online.",
-      },
-    }),
-  ]);
+  const now = nowIso();
+
+  db.payments.push({
+    id: uid(),
+    bookingId: booking.id,
+    type: "deposit",
+    direction: "in",
+    amount: booking.deposit,
+    method: input.deposit.method,
+    // Null marks a customer-initiated (online) payment.
+    memberId: null,
+    createdAt: now,
+  });
+
+  const existingHold = db.idHolds.find((h) => h.bookingId === booking.id);
+  if (existingHold) {
+    existingHold.fileRef = input.idFile.fileRef;
+    existingHold.fileName = input.idFile.fileName ?? null;
+    existingHold.releasedAt = null;
+  } else {
+    db.idHolds.push({
+      id: uid(),
+      bookingId: booking.id,
+      fileRef: input.idFile.fileRef,
+      fileName: input.idFile.fileName ?? null,
+      releasedAt: null,
+      createdAt: now,
+    });
+  }
+
+  booking.status = "confirmed";
+  booking.updatedAt = now;
+
+  db.bookingStatusLogs.push({
+    id: uid(),
+    bookingId: booking.id,
+    fromStatus: "pending",
+    toStatus: "confirmed",
+    memberId: null,
+    note: "Deposit recorded and identity document submitted online.",
+    createdAt: now,
+  });
+
+  persistDb();
 
   return { ok: true };
 }
@@ -326,11 +321,12 @@ export type CancelBookingResult = { ok: true } | { ok: false; error: BookingErro
  * Refunds are deliberately NOT issued here: policy is deposit-forfeit, and
  * money-out belongs to staff and the ledger.
  */
-export async function cancelBooking(
+export function cancelBooking(
   reference: string,
   phone: string,
-): Promise<CancelBookingResult> {
-  const booking = await findBookingForCustomer(reference, phone);
+): CancelBookingResult {
+  const db = getDb();
+  const booking = findBookingForCustomer(reference, phone);
   if (!booking) {
     return fail("NOT_FOUND", "We could not find that booking.", 404);
   }
@@ -345,43 +341,45 @@ export async function cancelBooking(
     );
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.booking.update({
-      where: { id: booking.id },
-      data: { status: "cancelled" },
-    });
+  const now = nowIso();
+  const fromStatus = booking.status;
 
-    await tx.bookingStatusLog.create({
-      data: {
-        bookingId: booking.id,
-        fromStatus: booking.status,
-        toStatus: "cancelled",
-        memberId: null,
-        note: "Cancelled by the customer from the website.",
-      },
-    });
+  booking.status = "cancelled";
+  booking.updatedAt = now;
 
-    // Release the ID hold if one was taken at confirm.
-    await tx.idHold.updateMany({
-      where: { bookingId: booking.id, releasedAt: null },
-      data: { releasedAt: new Date() },
-    });
-
-    // Return the dress to the pool — but only if nothing else holds it.
-    const stillHeld = await tx.booking.count({
-      where: {
-        productId: booking.productId,
-        status: { in: ACTIVE_BOOKING_STATUSES },
-        id: { not: booking.id },
-      },
-    });
-    if (stillHeld === 0) {
-      await tx.product.update({
-        where: { id: booking.productId },
-        data: { status: "Available" },
-      });
-    }
+  db.bookingStatusLogs.push({
+    id: uid(),
+    bookingId: booking.id,
+    fromStatus,
+    toStatus: "cancelled",
+    memberId: null,
+    note: "Cancelled by the customer from the website.",
+    createdAt: now,
   });
+
+  // Release the ID hold if one was taken at confirm.
+  for (const hold of db.idHolds) {
+    if (hold.bookingId === booking.id && hold.releasedAt === null) {
+      hold.releasedAt = now;
+    }
+  }
+
+  // Return the dress to the pool — but only if nothing else holds it.
+  const stillHeld = db.bookings.some(
+    (b) =>
+      b.productId === booking.productId &&
+      b.id !== booking.id &&
+      ACTIVE_BOOKING_STATUSES.includes(b.status as BookingStatus),
+  );
+  if (!stillHeld) {
+    const product = db.products.find((p) => p.id === booking.productId);
+    if (product) {
+      product.status = "Available";
+      product.updatedAt = now;
+    }
+  }
+
+  persistDb();
 
   return { ok: true };
 }
@@ -390,35 +388,57 @@ export async function cancelBooking(
  * A booking is retrieved with its reference AND the phone it was made with.
  * Neither alone is sufficient, so a guessed reference exposes nothing.
  */
-export async function findBookingForCustomer(reference: string, phone: string) {
+export function findBookingForCustomer(
+  reference: string,
+  phone: string,
+): BookingRecord | null {
   const normalized = normalizePhone(phone ?? "");
   if (!normalized.ok) return null;
 
-  const booking = await prisma.booking.findFirst({
-    where: {
-      reference: reference.trim().toUpperCase(),
-      customer: { normalizedPhone: normalized.normalized },
-    },
-    select: {
-      id: true,
-      reference: true,
-      status: true,
-      deposit: true,
-      productId: true,
-    },
-  });
+  const db = getDb();
+  const customer = db.customers.find(
+    (c) => c.normalizedPhone === normalized.normalized,
+  );
+  if (!customer) return null;
 
-  return booking;
+  return (
+    db.bookings.find(
+      (b) =>
+        b.reference === reference.trim().toUpperCase() &&
+        b.customerId === customer.id,
+    ) ?? null
+  );
+}
+
+/** Customer records are deduplicated by normalized phone (§6). */
+export function upsertCustomer(
+  db: Database,
+  data: { name: string; phone: string; normalizedPhone: string },
+) {
+  const existing = db.customers.find(
+    (c) => c.normalizedPhone === data.normalizedPhone,
+  );
+  const now = nowIso();
+  if (existing) {
+    existing.name = data.name;
+    existing.phone = data.phone;
+    existing.updatedAt = now;
+    return existing;
+  }
+  const customer = {
+    id: uid(),
+    name: data.name,
+    phone: data.phone,
+    normalizedPhone: data.normalizedPhone,
+    source: "website",
+    createdAt: now,
+    updatedAt: now,
+  };
+  db.customers.push(customer);
+  return customer;
 }
 
 // --- helpers ---------------------------------------------------------------
-
-class ClashError extends Error {}
-class UnavailableError extends Error {
-  constructor(public productStatus: string) {
-    super(productStatus);
-  }
-}
 
 function fail(
   code: BookingError["code"],
@@ -428,14 +448,10 @@ function fail(
   return { ok: false, error: { code, message, status } };
 }
 
-async function generateUniqueReference(): Promise<string> {
+function generateUniqueReference(db: Database): string {
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const candidate = generateReference("RS");
-    const existing = await prisma.booking.findUnique({
-      where: { reference: candidate },
-      select: { id: true },
-    });
-    if (!existing) return candidate;
+    if (!db.bookings.some((b) => b.reference === candidate)) return candidate;
   }
   throw new Error("Could not generate a unique booking reference.");
 }

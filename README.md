@@ -95,12 +95,12 @@ The site is a **client of the Atelier RS API** (`/api/v1/public`). It never
 queries a database from a page or component.
 
 Because that backend is not built yet, this repo ships a **local mock** at
-`src/app/api/v1/**` that implements the documented contract on top of Prisma +
-SQLite. The site really does speak HTTP to it, so nothing about the integration
-is faked.
+`src/app/api/v1/**` that implements the documented contract on top of a JSON
+data file (`src/data/db.json`). The site really does speak HTTP to it, so
+nothing about the integration is faked.
 
 **To switch to the real backend:** set `API_BASE_URL` (and `API_SITE_KEY`), then
-delete `src/app/api/v1/**` and `prisma/`. No page or component changes.
+delete `src/app/api/v1/**` and `src/data/`. No page or component changes.
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -130,12 +130,12 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 # paste into SESSION_SECRET
 
 npm install
-npx prisma migrate dev
-npm run db:seed
 npm run dev
 ```
 
-Seeds 2 branches, 3 collections each, and **36 one-of-one dresses**.
+The catalogue lives in `src/data/db.json` — 2 branches, 3 collections each, and
+**36 one-of-one dresses**. Edit that file to change the data; runtime writes
+(bookings, customers, leads) are persisted back into it.
 
 | Script | Purpose |
 |---|---|
@@ -143,9 +143,6 @@ Seeds 2 branches, 3 collections each, and **36 one-of-one dresses**.
 | `npm run build` | Production build |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
-| `npm run db:seed` | Seed demo catalogue |
-| `npm run db:studio` | Prisma Studio |
-| `npm run db:reset` | Drop, re-migrate, re-seed |
 
 > **Dependency versions are pinned deliberately.** Do not run
 > `npm audit fix --force` — it downgraded Next.js from 16 to 9 during
@@ -155,7 +152,7 @@ Seeds 2 branches, 3 collections each, and **36 one-of-one dresses**.
 
 ## Architecture
 
-**Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Prisma 7**
+**Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · JSON data store**
 
 ```
 src/

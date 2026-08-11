@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/prisma";
-import { visibleBranchWhere } from "@/lib/domain/availability";
+import { getDb } from "@/lib/db";
+import { isBranchVisible } from "@/lib/domain/availability";
 import { notFound, ok } from "../../../_lib/serialise";
 
 export async function GET(
@@ -8,19 +8,18 @@ export async function GET(
 ) {
   const { slug } = await params;
 
-  const branch = await prisma.branch.findFirst({
-    where: { slug, ...visibleBranchWhere() },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      country: true,
-      location: true,
-    },
-  });
+  const branch = getDb().branches.find(
+    (b) => b.slug === slug && isBranchVisible(b),
+  );
 
   // Unpublished mid-session → 404, per §11.
   if (!branch) return notFound("Branch not found.");
 
-  return ok(branch);
+  return ok({
+    id: branch.id,
+    name: branch.name,
+    slug: branch.slug,
+    country: branch.country,
+    location: branch.location,
+  });
 }

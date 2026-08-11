@@ -1,13 +1,12 @@
-import { prisma } from "@/lib/prisma";
+import { getDb } from "@/lib/db";
 import { createBooking } from "@/lib/domain/booking";
 import { fromDateKey } from "@/lib/domain/dates";
 import { checkRateLimit, getClientKey, rateLimitMessage } from "@/lib/rate-limit";
 import {
-  PRODUCT_INCLUDE,
+  buildBookingRow,
   fail,
   ok,
   serialiseBooking,
-  type BookingRow,
 } from "../_lib/serialise";
 
 /**
@@ -19,7 +18,7 @@ import {
  */
 export async function POST(request: Request) {
   const clientKey = await getClientKey();
-  const limit = await checkRateLimit("bookingCreate", clientKey);
+  const limit = checkRateLimit("bookingCreate", clientKey);
   if (!limit.allowed) {
     return fail(429, "RATE_LIMITED", rateLimitMessage(limit.retryAfterSeconds));
   }
@@ -52,7 +51,7 @@ export async function POST(request: Request) {
     return fail(422, "INVALID_INPUT", "eventDate must be YYYY-MM-DD.");
   }
 
-  const result = await createBooking({
+  const result = createBooking({
     productId: input.productId,
     branchId: input.branchId,
     eventDate,
@@ -63,15 +62,11 @@ export async function POST(request: Request) {
     return fail(result.error.status, result.error.code, result.error.message);
   }
 
-  const booking = await prisma.booking.findUniqueOrThrow({
-    where: { id: result.bookingId },
-    include: {
-      customer: { select: { name: true } },
-      product: { include: PRODUCT_INCLUDE },
-      payments: { select: { type: true, direction: true } },
-      idHold: { select: { id: true, releasedAt: true } },
-    },
-  });
+  const db = getDb();
+  const booking = db.bookings.find((b) => b.id === result.bookingId);
+  if (!booking) {
+    return fail(500, "INTERNAL", "Booking was created but could not be read.");
+  }
 
-  return ok(serialiseBooking(booking as BookingRow), { status: 201 });
+  return ok(serialiseBooking(buildBookingRow(booking, db)), { status: 201 });
 }

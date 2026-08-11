@@ -1,14 +1,13 @@
-import { prisma } from "@/lib/prisma";
+import { getDb, type ProductRecord } from "@/lib/db";
 import {
-  visibleBranchWhere,
-  visibleProductWhere,
+  isBranchVisible,
+  isProductVisible,
 } from "@/lib/domain/availability";
 import {
-  PRODUCT_INCLUDE,
+  buildProductRow,
   notFound,
   ok,
   serialiseProductCard,
-  type ProductRow,
 } from "../../../../_lib/serialise";
 
 /** GET /public/branches/{slug}/products — cards, optionally by collection. */
@@ -18,11 +17,9 @@ export async function GET(
 ) {
   const { slug } = await params;
   const url = new URL(request.url);
+  const db = getDb();
 
-  const branch = await prisma.branch.findFirst({
-    where: { slug, ...visibleBranchWhere() },
-    select: { id: true },
-  });
+  const branch = db.branches.find((b) => b.slug === slug && isBranchVisible(b));
   if (!branch) return notFound("Branch not found.");
 
   const collectionId = url.searchParams.get("collection_id");
@@ -30,26 +27,27 @@ export async function GET(
   const silhouette = url.searchParams.get("silhouette");
   const sort = url.searchParams.get("sort");
 
-  const orderBy =
+  const compare: (a: ProductRecord, b: ProductRecord) => number =
     sort === "price_asc"
-      ? [{ price: "asc" as const }]
+      ? (a, b) => (a.price ?? Infinity) - (b.price ?? Infinity)
       : sort === "price_desc"
-        ? [{ price: "desc" as const }]
+        ? (a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity)
         : sort === "trending"
-          ? [{ requestCount: "desc" as const }, { createdAt: "desc" as const }]
-          : [{ createdAt: "desc" as const }];
+          ? (a, b) =>
+              b.requestCount - a.requestCount ||
+              b.createdAt.localeCompare(a.createdAt)
+          : (a, b) => b.createdAt.localeCompare(a.createdAt);
 
-  const products = await prisma.product.findMany({
-    where: {
-      ...visibleProductWhere(),
-      branchId: branch.id,
-      ...(collectionId ? { collectionId } : {}),
-      ...(colour ? { colour } : {}),
-      ...(silhouette ? { silhouette } : {}),
-    },
-    include: PRODUCT_INCLUDE,
-    orderBy,
-  });
+  const products = db.products
+    .filter(
+      (p) =>
+        isProductVisible(p, db) &&
+        p.branchId === branch.id &&
+        (!collectionId || p.collectionId === collectionId) &&
+        (!colour || p.colour === colour) &&
+        (!silhouette || p.silhouette === silhouette),
+    )
+    .sort(compare);
 
-  return ok(products.map((p) => serialiseProductCard(p as ProductRow)));
+  return ok(products.map((p) => serialiseProductCard(buildProductRow(p, db))));
 }

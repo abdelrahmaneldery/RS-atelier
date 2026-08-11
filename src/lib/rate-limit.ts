@@ -2,7 +2,6 @@ import "server-only";
 
 import { headers } from "next/headers";
 
-import { prisma } from "./prisma";
 import { hashClientKey } from "./crypto";
 
 /**
@@ -10,8 +9,9 @@ import { hashClientKey } from "./crypto";
  *
  * Booking submission and booking lookup are open to anyone, so they need abuse
  * protection that does not depend on a session. Counters are keyed by a
- * non-reversible fingerprint and stored in the database, so the limit holds
- * across server instances.
+ * non-reversible fingerprint and kept in process memory — matching the JSON
+ * store, this mock backend runs as a single process, so that is where the
+ * limit holds.
  */
 
 export const RATE_LIMITS = {
@@ -24,6 +24,15 @@ export const RATE_LIMITS = {
 } as const;
 
 export type RateLimitName = keyof typeof RATE_LIMITS;
+
+// Attempt timestamps per bucket+key, shared across hot reloads in development.
+const globalForRateLimit = globalThis as unknown as {
+  __rateLimitBuckets: Map<string, number[]> | undefined;
+};
+
+function store(): Map<string, number[]> {
+  return (globalForRateLimit.__rateLimitBuckets ??= new Map());
+}
 
 /**
  * Best-effort client identity. Behind a proxy this is the forwarded address;
@@ -47,40 +56,30 @@ export type RateLimitResult =
  * Records an attempt and reports whether it is within the limit.
  * Call this *before* doing the work being protected.
  */
-export async function checkRateLimit(
+export function checkRateLimit(
   name: RateLimitName,
   keyHash: string,
-): Promise<RateLimitResult> {
+): RateLimitResult {
   const { bucket, max, windowMs } = RATE_LIMITS[name];
-  const since = new Date(Date.now() - windowMs);
+  const key = `${bucket}:${keyHash}`;
+  const now = Date.now();
+  const since = now - windowMs;
 
-  const recent = await prisma.rateLimitEntry.findMany({
-    where: { bucket, keyHash, createdAt: { gte: since } },
-    orderBy: { createdAt: "asc" },
-    select: { createdAt: true },
-  });
+  const recent = (store().get(key) ?? []).filter((t) => t >= since);
 
   if (recent.length >= max) {
-    const oldest = recent[0].createdAt.getTime();
+    store().set(key, recent);
     const retryAfterSeconds = Math.max(
       1,
-      Math.ceil((oldest + windowMs - Date.now()) / 1000),
+      Math.ceil((recent[0] + windowMs - now) / 1000),
     );
     return { allowed: false, retryAfterSeconds };
   }
 
-  await prisma.rateLimitEntry.create({ data: { bucket, keyHash } });
+  recent.push(now);
+  store().set(key, recent);
 
-  // Opportunistic housekeeping so the table does not grow without bound.
-  if (Math.random() < 0.02) {
-    void prisma.rateLimitEntry
-      .deleteMany({
-        where: { createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
-      })
-      .catch(() => undefined);
-  }
-
-  return { allowed: true, remaining: max - recent.length - 1 };
+  return { allowed: true, remaining: max - recent.length };
 }
 
 export function rateLimitMessage(retryAfterSeconds: number): string {
